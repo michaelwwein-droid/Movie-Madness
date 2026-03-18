@@ -99,7 +99,7 @@ async function getScores() {
         rows.slice(1).forEach((r, i) => {
             const cols = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             // Index [2] is Column C. Change to [1] if your names are in Column B.
-            let name = cols[2] ? cols[2].replace(/"/g, "") : "User";
+            let name = cols[1] ? cols[1].replace(/"/g, "") : "User";
             body.innerHTML += `<tr><td>${i+1}</td><td>${name}</td><td>0</td></tr>`;
         });
     } catch (e) { console.log(e); }
