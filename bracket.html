@@ -58,38 +58,38 @@
 
 <script>
     // --- 1. CONFIGURATION ---
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
-    const officialBracketURL = 'official_bracket.json';
+   function calculateScores(users, official) {
+    const results = [];
+    const norm = (s) => s ? s.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
+    
+    users.forEach(u => {
+        let s = 0, c = 0;
+        if (official && Array.isArray(official) && official.length > 0) {
+            official.forEach((round, rIdx) => {
+                const pts = Math.pow(2, rIdx);
+                if (u.rounds && u.rounds[rIdx]) {
+                    const officialRound = official[rIdx].matchups;
+                    officialRound.forEach((m, mIdx) => {
+                        const win = m?.name;
+                        const userMatch = u.rounds[rIdx][mIdx];
+                        // Support both nested arrays and flat objects
+                        const pick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
+                        
+                        if (win && pick && norm(pick) === norm(win)) { 
+                            s += pts; 
+                            c++; 
+                        }
+                    });
+                }
+            });
+        }
+        results.push({ name: u.name, score: s, roundsCorrect: c });
+    });
+    return results.sort((a, b) => b.score - a.score);
+}
 
-    // --- 2. SCORING ENGINE ---
-    function calculateScores(users, official) {
-        const results = [];
-        const norm = (s) => s ? s.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
-        
-        users.forEach(u => {
-            let s = 0, c = 0;
-            if (official && Array.isArray(official) && official.length > 0) {
-                official.forEach((round, rIdx) => {
-                    const pts = Math.pow(2, rIdx); // Round 1=1pt, Round 2=2pts, etc.
-                    if (round.matchups && u.rounds && u.rounds[rIdx]) {
-                        round.matchups.forEach((m, mIdx) => {
-                            const win = m?.name;
-                            const userMatch = u.rounds[rIdx][mIdx];
-                            const pick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
-                            
-                            if (win && pick && norm(pick) === norm(win)) { 
-                                s += pts; 
-                                c++; 
-                            }
-                        });
-                    }
-                });
-            }
-            results.push({ name: u.name, score: s, roundsCorrect: c });
-        });
-        return results.sort((a, b) => b.score - a.score);
-    }
-
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
+const officialBracketURL = 'official_bracket.json';
     // --- 3. MOVIE DATA ---
     const initialMovies = [
         { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
@@ -185,63 +185,66 @@
     }
 
     // --- 5. LEADERBOARD UPDATER ---
-    async function updateLeaderboard() {
-        const tbody = document.getElementById("leaderboard-body");
-        try {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
-            const response = await fetch(proxyUrl);
-            const json = await response.json();
-            const csvText = json.contents;
+   async function updateLeaderboard() {
+    const tbody = document.getElementById("leaderboard-body");
+    try {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}&cache=${Date.now()}`;
+        const response = await fetch(proxyUrl);
+        const json = await response.json();
+        const csvText = json.contents;
+        
+        // Split rows correctly
+        const rows = csvText.split(/\r?\n/).map(r => r.trim()).filter(r => r !== "");
+        const users = [];
+
+        for (let i = 1; i < rows.length; i++) {
+            // Complex split to handle commas inside quotes
+            const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             
-            const rows = csvText.split('\n').map(r => r.trim()).filter(r => r !== "");
-            const users = [];
+            // Per your data: Index 0: Timestamp, Index 1: Email, Index 2: Name, Index 3: Bracket
+            let rawName = cols[2] ? cols[2].replace(/"/g, "").trim() : "Anonymous";
+            let rawBracket = cols[3] || "";
 
-            for (let i = 1; i < rows.length; i++) {
-                const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                
-                let foundName = "";
-                let foundBracket = [];
-
-                // Search every column for the data
-                cols.forEach((cell, idx) => {
-                    let clean = cell.replace(/^"|"$/g, '').replace(/""/g, '"').trim();
-                    
-                    if (clean.startsWith("[[[") || clean.includes('{"seed"')) {
-                        try { foundBracket = JSON.parse(clean); } catch(e) {}
-                    } 
-                    else if (clean.length > 1 && !clean.includes("/") && !clean.includes("@") && clean.toLowerCase() !== "name" && clean.toLowerCase() !== "timestamp") {
-                        if (!foundName) foundName = clean;
-                    }
-                });
-
-                if (foundName) {
-                    users.push({ name: foundName, rounds: foundBracket });
-                }
-            }
-
-            let official = [];
+            let cleanBracketData = [];
             try {
-                const offRes = await fetch(officialBracketURL);
-                if (offRes.ok) official = await offRes.json();
-            } catch(e) { console.warn("No official results found."); }
-
-            const scores = calculateScores(users, official);
-            
-            tbody.innerHTML = "";
-            if (scores.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='4'>No entries found in Google Sheet.</td></tr>";
-            } else {
-                scores.forEach((u, i) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `<td>${i+1}</td><td>${u.name}</td><td>${u.score}</td><td>${u.roundsCorrect}</td>`;
-                    tbody.appendChild(tr);
-                });
+                // THE CRITICAL FIX: Google uses double-double quotes ("") for JSON
+                let fixedJson = rawBracket
+                    .replace(/^"/, '')   // Remove leading "
+                    .replace(/"$/, '')   // Remove trailing "
+                    .replace(/""/g, '"'); // Turn "" into "
+                
+                cleanBracketData = JSON.parse(fixedJson);
+            } catch(e) {
+                console.warn("Could not parse bracket for: " + rawName);
             }
-        } catch (err) { 
-            console.error("Leaderboard error:", err);
-            tbody.innerHTML = "<tr><td colspan='4'>Connection Error. Refreshing...</td></tr>";
+
+            if (rawName && rawName.toLowerCase() !== "name") {
+                users.push({ name: rawName, rounds: cleanBracketData });
+            }
         }
+
+        let official = [];
+        try {
+            const offRes = await fetch(officialBracketURL);
+            if (offRes.ok) official = await offRes.json();
+        } catch(e) {}
+
+        const scores = calculateScores(users, official);
+        
+        tbody.innerHTML = "";
+        if (scores.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4'>No entries found in Sheet.</td></tr>";
+        } else {
+            scores.forEach((u, i) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${i+1}</td><td>${u.name}</td><td>${u.score}</td><td>${u.roundsCorrect}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) { 
+        tbody.innerHTML = "<tr><td colspan='4'>Error: " + err.message + "</td></tr>";
     }
+}
 
     // --- 6. INITIALIZE ---
     renderBracket();
