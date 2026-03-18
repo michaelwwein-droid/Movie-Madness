@@ -5,140 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dead Movie Society | Movie Madness</title>
     <style>
-       <style>
-    body {
-        font-family: 'Segoe UI', sans-serif;
-        background: #121212;
-        color: #eee;
-        margin: 0;
-        padding: 20px;
-    }
+        /* --- THEME & BASE --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #121212;
+            color: #eeeeee;
+            margin: 0;
+            padding: 20px;
+        }
 
-    h1 { text-align: center; color: #ffcc00; text-transform: uppercase; }
+        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 4px; }
+        
+        /* --- THE BRACKET ENGINE --- */
+        .bracket-container {
+            display: flex;
+            flex-direction: row;
+            padding: 40px 10px;
+            overflow-x: auto;
+            min-height: 800px;
+        }
 
-    /* The container now allows the rounds to sit side-by-side naturally */
-    .bracket-outer {
-        display: flex;
-        align-items: flex-start;
-        gap: 0; /* We will use margins on rounds for better control */
-        padding: 40px;
-        overflow-x: auto;
-    }
+        .round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around; /* This keeps them centered relative to each other */
+            width: 220px;
+            margin-right: 50px;
+            flex-shrink: 0;
+        }
 
-    .round {
-        display: flex;
-        flex-direction: column;
-        width: 240px;
-        margin-right: 40px;
-    }
+        .round h3 {
+            text-align: center;
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
 
-    .round h3 {
-        text-align: center;
-        color: #888;
-        font-size: 0.9rem;
-        height: 30px;
-    }
+        .matchup {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+            flex-grow: 1;
+            justify-content: center;
+        }
 
-    .matchup {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        /* THIS IS THE KEY: Fixed heights that double every round */
-        min-height: 100px; 
-    }
+        /* --- THE CONNECTOR LINES --- */
+        .matchup::after {
+            content: "";
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            width: 30px;
+            height: 50%;
+            border-right: 2px solid #444;
+        }
 
-    /* Round 2 matchups need to be twice as tall to align with R1 */
-    .round:nth-child(2) .matchup { min-height: 200px; }
-    .round:nth-child(3) .matchup { min-height: 400px; }
-    .round:nth-child(4) .matchup { min-height: 800px; }
-    .round:nth-child(5) .matchup { min-height: 1600px; }
+        /* Top match of a pair leans down, bottom match leans up */
+        .matchup:nth-child(odd)::after {
+            border-top: 2px solid #444;
+            border-radius: 0 10px 0 0;
+            height: 50%; 
+            top: 50%;
+        }
 
-    .matchup button {
-        background: #2a2a2a;
-        color: white;
-        border: 1px solid #444;
-        padding: 10px;
-        margin: 2px 0;
-        cursor: pointer;
-        border-radius: 4px;
-        width: 100%;
-        text-align: left;
-        z-index: 2;
-    }
+        .matchup:nth-child(even)::after {
+            border-bottom: 2px solid #444;
+            border-radius: 0 0 10px 0;
+            height: 50%;
+            top: 0;
+        }
 
-    .matchup button:hover { border-color: #ffcc00; background: #333; }
+        /* Hide lines on the very last round */
+        .round:last-child .matchup::after {
+            display: none;
+        }
 
-    .seed {
-        color: #ffcc00;
-        font-weight: bold;
-        margin-right: 10px;
-    }
+        /* --- BUTTONS & SEEDS --- */
+        .matchup button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 10px;
+            margin: 2px 0;
+            cursor: pointer;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #222;
+            color: white;
+            text-align: left;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            z-index: 2;
+        }
 
-    /* THE CONNECTOR LINES */
-    .matchup::after {
-        content: "";
-        position: absolute;
-        right: -30px;
-        top: 50%;
-        width: 30px;
-        height: 50%; /* Adjusts based on the matchup height */
-        border-right: 2px solid #444;
-        z-index: 1;
-    }
+        .matchup button:hover {
+            border-color: #ffcc00;
+            background: #333;
+        }
 
-    /* Alternate the bracket "arms" to meet in the middle */
-    .matchup:nth-child(odd)::after {
-        border-top: 2px solid #444;
-        transform: translateY(0);
-        border-radius: 0 10px 0 0;
-    }
+        .seed {
+            color: #ffcc00;
+            font-weight: bold;
+            margin-right: 8px;
+            font-size: 0.75rem;
+            width: 15px;
+        }
 
-    .matchup:nth-child(even)::after {
-        border-bottom: 2px solid #444;
-        transform: translateY(-100%);
-        border-radius: 0 0 10px 0;
-    }
+        /* --- SCOREBOARD & CONTROLS --- */
+        .controls {
+            max-width: 500px;
+            margin: 40px auto;
+            text-align: center;
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
 
-    /* Hide lines on the last round */
-    .round:last-child .matchup::after { display: none; }
+        .champ-display {
+            font-size: 1.8rem;
+            color: #ffcc00;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
 
-    .controls { text-align: center; margin-top: 50px; background: #1a1a1a; padding: 20px; border-radius: 10px; }
-    .champion-box { font-size: 2rem; color: #ffcc00; margin-bottom: 20px; }
-    
-    table { width: 100%; max-width: 800px; margin: 40px auto; border-collapse: collapse; background: #1a1a1a; }
-    th, td { padding: 12px; border: 1px solid #333; text-align: center; }
-    th { background: #333; color: #ffcc00; }
-</style>
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .btn-submit {
+            padding: 10px 20px;
+            background: #ffcc00;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: #1a1a1a;
+        }
+
+        th, td { padding: 12px; border: 1px solid #333; text-align: center; }
+        th { background: #333; color: #ffcc00; }
+    </style>
 </head>
 <body>
 
     <h1>🎬 Movie Madness</h1>
-    <p style="text-align: center; color: #888;">Presented by Dead Movie Society</p>
 
-    <div class="bracket-outer" id="bracket"></div>
+    <div class="bracket-container" id="bracket"></div>
 
     <div class="controls">
-        <div id="champion" class="champion-box">Select Your Winner</div>
-        <input type="text" id="name" placeholder="Enter Your Bracket Name">
-        <button class="primary" onclick="submitForm()">Submit My Bracket</button>
-        <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">Don't forget to vote on @deadmoviesociety's stories!</p>
+        <div id="champion" class="champ-display">Predict Your Winner</div>
+        <input type="text" id="name" placeholder="Bracket Name">
+        <button class="btn-submit" onclick="submitForm()">Submit Bracket</button>
     </div>
 
-    <div class="leaderboard-section">
-        <h2>Live Leaderboard</h2>
-        <table id="leaderboard">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Name</th>
-                    <th>Score</th>
-                    <th>Correct</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    <h2 style="text-align:center; color:#ffcc00;">Live Leaderboard</h2>
+    <table id="leaderboard">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Score</th>
+                <th>Correct</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
     <script>
         // ---------------- MOVIES ----------------
