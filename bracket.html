@@ -174,13 +174,27 @@ function submitForm() {
 async function updateLeaderboard() {
     const tbody = document.getElementById("leaderboard-body");
     try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}&t=${Date.now()}`;
+        // 1. Try a different proxy (CorsProxy.io)
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}&t=${Date.now()}`;
         const response = await fetch(proxyUrl);
-        const json = await response.json();
-        const csvText = json.contents;
-        
+        const csvText = await response.text();
+
+        // LOGGING: This helps us see what the computer sees
+        console.log("Full CSV Content:", csvText);
+
+        if (!csvText || csvText.length < 10) {
+            tbody.innerHTML = "<tr><td colspan='4'>Error: Google returned an empty file. Try Re-Publishing.</td></tr>";
+            return;
+        }
+
         const rows = csvText.split(/\r?\n/).filter(r => r.trim() !== "");
         const users = [];
+
+        // If we only have the header row (length 1), it's "empty"
+        if (rows.length <= 1) {
+            tbody.innerHTML = `<tr><td colspan='4'>Headers found, but no player data yet. (Rows: ${rows.length})</td></tr>`;
+            return;
+        }
 
         for (let i = 1; i < rows.length; i++) {
             const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -211,8 +225,9 @@ async function updateLeaderboard() {
 
         const scores = calculateScores(users, official);
         tbody.innerHTML = "";
+        
         if (users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan='4'>No entries found. (Total Rows in Sheet: ${rows.length - 1})</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan='4'>Parsed 0 users. Check if column 3 (Name) is empty.</td></tr>`;
         } else {
             scores.forEach((u, i) => {
                 const tr = document.createElement("tr");
@@ -221,7 +236,7 @@ async function updateLeaderboard() {
             });
         }
     } catch (err) { 
-        tbody.innerHTML = "<tr><td colspan='4'>Error: " + err.message + "</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='4'>Connection Error: " + err.message + "</td></tr>";
     }
 }
 
