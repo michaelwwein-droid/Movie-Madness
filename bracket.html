@@ -1,107 +1,315 @@
-// --- CONFIG ---
-const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
-const officialBracketURL = 'official_bracket.json'; 
-
-// ... [Keep your initialMovies and renderBracket code here] ...
-
-// --- LEADERBOARD & SCORING ---
-async function updateLeaderboard() {
-    try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
-        const response = await fetch(proxyUrl);
-        const json = await response.json();
-        const csvText = json.contents;
-
-        // 1. Fetch Official Results (fails gracefully if not found)
-        let official = [];
-        try {
-            const offRes = await fetch(officialBracketURL);
-            if (offRes.ok) official = await offRes.json();
-        } catch (e) { console.warn("Official results not found."); }
-
-        // 2. Parse CSV Rows
-        const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
-        const users = [];
-
-        // Start at index 1 to skip headers
-        for (let i = 1; i < rows.length; i++) {
-            // This regex handles commas inside quotes
-            const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-            
-            const name = columns[1] ? columns[1].replace(/"/g, "") : "Anonymous";
-            let bracketData = [];
-            
-            try {
-                // Clean up Google Sheets' triple-quote mess for JSON
-                let rawJson = columns[2] || "[]";
-                rawJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
-                bracketData = JSON.parse(rawJson);
-            } catch (e) { console.error("JSON Parse error for", name); }
-
-            users.push({ name, rounds: bracketData });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dead Movie Society | Movie Madness</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #121212;
+            color: #eeeeee;
+            margin: 0;
+            padding: 20px;
         }
 
-        // 3. Run Calculations
-        const scores = calculateScores(users, official);
+        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; }
 
-        // 4. Render Table
-        const tbody = document.getElementById("leaderboard-body");
-        tbody.innerHTML = "";
+        /* --- THE BRACKET LAYOUT --- */
+        .bracket-outer {
+            display: flex;
+            align-items: flex-start;
+            padding: 40px;
+            overflow-x: auto;
+        }
 
-        scores.forEach((user, i) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${i + 1}</td>
-                <td>${user.name}</td>
-                <td>${user.score}</td>
-                <td>${user.roundsCorrect}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+        .round {
+            display: flex;
+            flex-direction: column;
+            width: 280px; 
+            margin-right: 80px;
+            flex-shrink: 0;
+        }
 
-    } catch (err) {
-        console.error("Leaderboard error:", err);
+        .round h3 {
+            text-align: center;
+            color: #ffcc00;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .matchup {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 120px; 
+        }
+
+        /* Vertical Spacing Logic */
+        .round:nth-child(2) .matchup { min-height: 240px; }
+        .round:nth-child(3) .matchup { min-height: 480px; }
+        .round:nth-child(4) .matchup { min-height: 960px; }
+        .round:nth-child(5) .matchup { min-height: 1920px; }
+        .round:nth-child(6) .matchup { min-height: 3840px; }
+
+        .matchup button {
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            padding: 12px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            text-align: left;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            white-space: normal;
+        }
+
+        .matchup button:hover {
+            border-color: #ffcc00;
+            background: #333;
+        }
+
+        .seed {
+            color: #ffcc00;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* --- CONTROLS & UI --- */
+        .controls {
+            text-align: center;
+            margin: 50px auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            border: 1px solid #333;
+        }
+
+        .champion-box {
+            font-size: 2rem;
+            color: #ffcc00;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            width: 70%;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .btn-submit {
+            background: #ffcc00;
+            color: black;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        table { width: 100%; max-width: 800px; margin: 40px auto; border-collapse: collapse; background: #1a1a1a; }
+        th, td { padding: 12px; border: 1px solid #333; text-align: center; }
+        th { background: #333; color: #ffcc00; }
+    </style>
+</head>
+<body>
+
+    <h1>🎬 Movie Madness</h1>
+
+    <div class="bracket-outer" id="bracket"></div>
+
+    <div class="controls">
+        <div id="champion" class="champion-box">Predict Your Winner</div>
+        <input type="text" id="name" placeholder="Bracket Name">
+        <br>
+        <button class="btn-submit" onclick="submitForm()">Submit Bracket</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Rank</th><th>Name</th><th>Score</th><th>Correct</th></tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            <tr><td colspan="4">Loading leaderboard...</td></tr>
+        </tbody>
+    </table>
+
+<script>
+    // --- CONFIG ---
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
+    const officialBracketURL = 'official_bracket.json';
+
+    const initialMovies = [
+        { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
+        { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
+        { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine of the Spotless Mind" },
+        { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to Washington" },
+        { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
+        { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
+        { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
+        { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka & the Chocolate Factory" },
+        { seed: 1, name: "The Godfather" }, { seed: 16, name: "Groundhog Day" },
+        { seed: 8, name: "Dr. Strangelove" }, { seed: 9, name: "The Truman Show" },
+        { seed: 5, name: "2001: A Space Odyssey" }, { seed: 12, name: "It’s a Wonderful Life" },
+        { seed: 4, name: "12 Angry Men" }, { seed: 13, name: "Best in Show" },
+        { seed: 6, name: "The Grand Budapest Hotel" }, { seed: 11, name: "Full Metal Jacket" },
+        { seed: 3, name: "Back to the Future" }, { seed: 14, name: "Major League" },
+        { seed: 7, name: "Jaws" }, { seed: 10, name: "Train Dreams" },
+        { seed: 2, name: "Star Wars: Episode IV – A New Hope" }, { seed: 15, name: "Casablanca" },
+        { seed: 1, name: "The Dark Knight" }, { seed: 16, name: "Monty Python and the Holy Grail" },
+        { seed: 8, name: "Dead Poets Society" }, { seed: 9, name: "Coming to America" },
+        { seed: 5, name: "Ferris Bueller’s Day Off" }, { seed: 12, name: "A League of Their Own" },
+        { seed: 4, name: "Raiders of the Lost Ark" }, { seed: 13, name: "Moonrise Kingdom" },
+        { seed: 6, name: "The Breakfast Club" }, { seed: 11, name: "Cool Hand Luke" },
+        { seed: 3, name: "Whiplash" }, { seed: 14, name: "Harry Potter and the Deathly Hallows – Part 2" },
+        { seed: 7, name: "The Karate Kid" }, { seed: 10, name: "National Lampoon’s Vacation" },
+        { seed: 2, name: "Good Will Hunting" }, { seed: 15, name: "This Is Spinal Tap" },
+        { seed: 1, name: "Pulp Fiction" }, { seed: 16, name: "Caddyshack" },
+        { seed: 8, name: "Ghostbusters" }, { seed: 9, name: "Avengers: Infinity War" },
+        { seed: 5, name: "La La Land" }, { seed: 12, name: "Catch Me If You Can" },
+        { seed: 4, name: "The Princess Bride" }, { seed: 13, name: "Field of Dreams" },
+        { seed: 6, name: "Inception" }, { seed: 11, name: "Rounders" },
+        { seed: 3, name: "The Usual Suspects" }, { seed: 14, name: "WarGames" },
+        { seed: 7, name: "Spider-Man: Across the Spider-Verse" }, { seed: 10, name: "One Flew Over the Cuckoo’s Nest" },
+        { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
+    ];
+
+    let rounds = [[]];
+    for (let i = 0; i < initialMovies.length; i += 2) {
+        rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
     }
-}
 
-function calculateScores(users, official) {
-    const scores = [];
-    
-    function normalize(str) {
-        if (!str) return "";
-        return str.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim();
-    }
-
-    users.forEach(user => {
-        let score = 0;
-        let roundsCorrect = 0;
-
-        // Only calculate if official results exist
-        if (official && official.length > 0) {
-            official.forEach((round, rIndex) => {
-                if (!user.rounds || !user.rounds[rIndex]) return;
-                
-                const roundPoints = Math.pow(2, rIndex);
-                const userMatchups = user.rounds[rIndex]; 
-
-                round.matchups.forEach((offMatch, mIndex) => {
-                    const officialWinner = offMatch?.name;
-                    const userPick = userMatchups?.[mIndex]?.name; // Adjust based on your JSON structure
-
-                    if (officialWinner && userPick && normalize(userPick) === normalize(officialWinner)) {
-                        score += roundPoints;
-                        roundsCorrect++;
+    function renderBracket() {
+        const bracketDiv = document.getElementById("bracket");
+        bracketDiv.innerHTML = "";
+        rounds.forEach((round, i) => {
+            const roundDiv = document.createElement("div");
+            roundDiv.className = "round";
+            roundDiv.innerHTML = `<h3>Round ${i + 1}</h3>`;
+            round.forEach((matchup, j) => {
+                const matchDiv = document.createElement("div");
+                matchDiv.className = "matchup";
+                matchup.forEach((movie, k) => {
+                    const btn = document.createElement("button");
+                    if (movie) {
+                        btn.innerHTML = `<span class="seed">${movie.seed}</span> ${movie.name}`;
+                        btn.onclick = () => selectWinner(i, j, k);
+                    } else {
+                        btn.innerHTML = `<span class="seed">?</span> <i>TBD</i>`;
+                        btn.style.opacity = "0.3";
                     }
+                    matchDiv.appendChild(btn);
                 });
+                roundDiv.appendChild(matchDiv);
             });
+            bracketDiv.appendChild(roundDiv);
+        });
+    }
+
+    function selectWinner(roundIndex, matchIndex, choiceIndex) {
+        const winner = rounds[roundIndex][matchIndex][choiceIndex];
+        if (rounds.length <= roundIndex + 1) rounds.push([]);
+        const nextMatchIdx = Math.floor(matchIndex / 2);
+        if (!rounds[roundIndex + 1][nextMatchIdx]) rounds[roundIndex + 1][nextMatchIdx] = [null, null];
+        rounds[roundIndex + 1][nextMatchIdx][matchIndex % 2] = winner;
+        renderBracket();
+        const lastRound = rounds[rounds.length - 1];
+        if (lastRound.length === 1 && lastRound[0][0]) {
+            document.getElementById("champion").innerText = "🏆 " + lastRound[0][0].name;
         }
-        scores.push({ name: user.name, score, roundsCorrect });
-    });
+    }
 
-    return scores.sort((a, b) => b.score - a.score);
-}
+    function submitForm() {
+        const name = document.getElementById("name").value || "Anonymous";
+        const data = JSON.stringify(rounds);
+        const formData = new FormData();
+        formData.append("entry.674437929", name);
+        formData.append("entry.1121614126", data);
+        fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
+        .then(() => alert("Bracket Submitted!"))
+        .catch(() => alert("Error submitting."));
+    }
 
-// Start
-renderBracket();
-updateLeaderboard();
-setInterval(updateLeaderboard, 30000);
+    // --- LEADERBOARD LOGIC ---
+    async function updateLeaderboard() {
+        try {
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
+            const response = await fetch(proxyUrl);
+            const json = await response.json();
+            const csvText = json.contents;
+
+            let official = [];
+            try {
+                const offRes = await fetch(officialBracketURL);
+                if (offRes.ok) official = await offRes.json();
+            } catch (e) { console.warn("Official winners not found."); }
+
+            const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
+            const users = [];
+
+            for (let i = 1; i < rows.length; i++) {
+                const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+                const name = columns[1] ? columns[1].replace(/"/g, "") : "Anonymous";
+                let bracketData = [];
+                try {
+                    let rawJson = columns[2] || "[]";
+                    rawJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
+                    bracketData = JSON.parse(rawJson);
+                } catch (e) {}
+                users.push({ name, rounds: bracketData });
+            }
+
+            const scores = calculateScores(users, official);
+            const tbody = document.getElementById("leaderboard-body");
+            tbody.innerHTML = "";
+
+            scores.forEach((user, i) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${i + 1}</td><td>${user.name}</td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (err) { console.error("Leaderboard error:", err); }
+    }
+
+    function calculateScores(users, official) {
+        const scores = [];
+        const normalize = (str) => str ? str.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
+
+        users.forEach(user => {
+            let score = 0, roundsCorrect = 0;
+            if (official && official.length > 0) {
+                official.forEach((round, rIndex) => {
+                    if (!user.rounds || !user.rounds[rIndex]) return;
+                    const roundPoints = Math.pow(2, rIndex);
+                    round.matchups.forEach((offMatch, mIndex) => {
+                        const offWin = Array.isArray(offMatch) ? offMatch[0]?.name : offMatch?.name;
+                        const userPick = user.rounds[rIndex][mIndex]?.name;
+                        if (offWin && userPick && normalize(userPick) === normalize(offWin)) {
+                            score += roundPoints;
+                            roundsCorrect++;
+                        }
+                    });
+                });
+            }
+            scores.push({ name: user.name, score, roundsCorrect });
+        });
+        return scores.sort((a, b) => b.score - a.score);
+    }
+
+    renderBracket();
+    updateLeaderboard();
+    setInterval(updateLeaderboard, 30000);
+</script>
+</body>
+</html>
