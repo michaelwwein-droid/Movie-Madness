@@ -236,7 +236,7 @@
 const officialBracketURL = 'official_bracket.json'; 
     const userBracketsURL = 'https://sheetdb.io/api/v1/zdvrwyp85u49u'; 
 
-   async function updateLeaderboard() {
+async function updateLeaderboard() {
     try {
         const [officialRes, usersRes] = await Promise.all([
             fetch(officialBracketURL),
