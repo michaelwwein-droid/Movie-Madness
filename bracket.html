@@ -243,8 +243,6 @@
 
     // --- LEADERBOARD LOGIC ---
     async function updateLeaderboard() {
-        const tbody = document.getElementById("leaderboard-body");
-        try {async function updateLeaderboard() {
     const tbody = document.getElementById("leaderboard-body");
     try {
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
@@ -253,35 +251,41 @@
         const csvText = json.contents;
 
         if (!csvText) {
-            tbody.innerHTML = "<tr><td colspan='4'>No data from Google.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4'>Google Sheet is empty or not published.</td></tr>";
             return;
         }
 
         const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
         const users = [];
 
-        // This handles the data extraction
         for (let i = 1; i < rows.length; i++) {
             const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
             
-            // --- DEBUG LOGGING ---
-            // This will show you EXACTLY what is in each column in your browser console
-            if (i === 1) console.log("Column Check for Row 1:", columns);
-
-            // Based on your latest: 1:Timestamp, 2:Email, 3:Name, 4:Bracket
-            // If the console shows Name in a different spot, change the numbers below
-            let name = (columns[2] || "").replace(/"/g, "").trim();
-            let rawJson = columns[3] || "[]";
-            
+            let name = "Anonymous";
             let bracketData = [];
-            try {
-                let cleanJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
-                if (cleanJson.startsWith("[")) {
-                    bracketData = JSON.parse(cleanJson);
-                }
-            } catch (e) {}
 
-            if (name && name !== "Name") {
+            // LOOP THROUGH EVERY COLUMN TO FIND THE DATA
+            columns.forEach((col, index) => {
+                let cleanCol = col.replace(/"/g, "").trim();
+                
+                // 1. If it looks like JSON bracket data, grab it
+                if (cleanCol.startsWith("[[[") || cleanCol.includes('{"seed"')) {
+                    try {
+                        let jsonStr = col.replace(/^"|"$/g, '').replace(/""/g, '"');
+                        bracketData = JSON.parse(jsonStr);
+                    } catch(e) {}
+                } 
+                // 2. If it's the 3rd column (index 2), that's usually our Name
+                else if (index === 2 && cleanCol !== "") {
+                    name = cleanCol;
+                }
+                // 3. Fallback: if name is still anonymous and this col has text (and isn't email/date)
+                else if (name === "Anonymous" && cleanCol.length > 2 && !cleanCol.includes("@") && !cleanCol.includes("/")) {
+                    name = cleanCol;
+                }
+            });
+
+            if (name !== "Name" && name !== "") {
                 users.push({ name, rounds: bracketData });
             }
         }
@@ -296,8 +300,8 @@
         tbody.innerHTML = ""; 
 
         if (scores.length === 0) {
-            // This means 'users' array is empty because the 'if(name)' check failed
-            tbody.innerHTML = "<tr><td colspan='4'>No entries found. Check Console (F12).</td></tr>";
+            // This is the safety net: let's see what the RAW first row looks like
+            tbody.innerHTML = `<tr><td colspan='4'>DEBUG: Found ${rows.length} rows, but no names. First row columns: ${rows[1].substring(0,50)}...</td></tr>`;
         } else {
             scores.forEach((user, i) => {
                 const tr = document.createElement("tr");
@@ -306,8 +310,7 @@
             });
         }
     } catch (err) {
-        console.error("Leaderboard error:", err);
-        tbody.innerHTML = "<tr><td colspan='4'>Error loading scores.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='4'>Critical Error: " + err.message + "</td></tr>";
     }
 }
 
