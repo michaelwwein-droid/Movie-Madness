@@ -6,16 +6,15 @@
     <title>Dead Movie Society | Movie Madness</title>
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             background: #121212;
-            color: #eee;
+            color: #eeeeee;
             margin: 0;
             padding: 20px;
         }
 
         h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* --- THE LAYOUT --- */
         .bracket-outer {
             display: flex;
             align-items: flex-start;
@@ -26,8 +25,8 @@
         .round {
             display: flex;
             flex-direction: column;
-            width: 240px;
-            margin-right: 60px; /* Space between rounds */
+            width: 280px; /* Slightly wider to fit long movie names */
+            margin-right: 80px;
             flex-shrink: 0;
         }
 
@@ -43,28 +42,29 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            /* Matchup heights double each round to keep everything aligned */
-            min-height: 100px; 
+            min-height: 120px; 
         }
 
-        .round:nth-child(2) .matchup { min-height: 200px; }
-        .round:nth-child(3) .matchup { min-height: 400px; }
-        .round:nth-child(4) .matchup { min-height: 800px; }
-        .round:nth-child(5) .matchup { min-height: 1600px; }
-        .round:nth-child(6) .matchup { min-height: 3200px; }
+        /* Dynamic spacing to keep rounds aligned */
+        .round:nth-child(2) .matchup { min-height: 240px; }
+        .round:nth-child(3) .matchup { min-height: 480px; }
+        .round:nth-child(4) .matchup { min-height: 960px; }
+        .round:nth-child(5) .matchup { min-height: 1920px; }
+        .round:nth-child(6) .matchup { min-height: 3840px; }
 
-        /* --- BUTTONS --- */
         .matchup button {
             background: #2a2a2a;
             color: white;
             border: 1px solid #444;
-            padding: 10px;
+            padding: 12px;
             margin: 2px 0;
             cursor: pointer;
             border-radius: 4px;
             width: 100%;
             text-align: left;
+            font-size: 0.85rem;
             transition: 0.2s;
+            white-space: normal; /* Allows long names to wrap if needed */
         }
 
         .matchup button:hover {
@@ -78,7 +78,6 @@
             margin-right: 10px;
         }
 
-        /* --- UI CONTROLS --- */
         .controls {
             text-align: center;
             margin: 50px auto;
@@ -90,7 +89,7 @@
         }
 
         .champion-box {
-            font-size: 2.2rem;
+            font-size: 2rem;
             color: #ffcc00;
             font-weight: bold;
             margin-bottom: 20px;
@@ -117,7 +116,6 @@
             text-transform: uppercase;
         }
 
-        /* --- TABLE --- */
         table { width: 100%; max-width: 800px; margin: 40px auto; border-collapse: collapse; background: #1a1a1a; }
         th, td { padding: 12px; border: 1px solid #333; text-align: center; }
         th { background: #333; color: #ffcc00; }
