@@ -1,121 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Movie Madness</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Madness | Bracket & Leaderboard</title>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; text-align: center; }
-        .bracket-outer { display: flex; overflow-x: auto; padding: 20px; background: #1a1a1a; }
-        .round { flex: 0 0 200px; margin-right: 30px; display: flex; flex-direction: column; }
-        .matchup { margin: 10px 0; display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
-        button { background: #333; color: white; border: 1px solid #444; padding: 10px; margin: 2px 0; cursor: pointer; text-align: left; }
-        .round:nth-child(2) .matchup { min-index: 120px; margin: 40px 0; }
-        table { width: 80%; margin: 20px auto; border-collapse: collapse; }
-        th, td { border: 1px solid #444; padding: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #eee; padding: 20px; margin: 0; }
+        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* Bracket Layout */
+        .bracket-outer { display: flex; padding: 40px; overflow-x: auto; min-height: 450px; background: #1a1a1a; border-radius: 12px; margin-bottom: 30px; }
+        .round { display: flex; flex-direction: column; width: 240px; margin-right: 50px; flex-shrink: 0; }
+        .matchup { display: flex; flex-direction: column; justify-content: center; min-height: 100px; margin: 10px 0; }
+        
+        /* Spacing for bracket depth */
+        .round:nth-child(2) .matchup { min-height: 200px; }
+        .round:nth-child(3) .matchup { min-height: 400px; }
+        .round:nth-child(4) .matchup { min-height: 800px; }
+
+        button { background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; margin: 2px 0; cursor: pointer; border-radius: 4px; text-align: left; width: 100%; transition: 0.2s; }
+        button:hover { border-color: #ffcc00; background: #333; }
+        .seed { color: #ffcc00; font-weight: bold; margin-right: 8px; font-size: 0.8rem; }
+
+        .controls { text-align: center; margin: 40px auto; background: #1a1a1a; padding: 30px; border-radius: 12px; max-width: 550px; border: 1px solid #333; }
+        input { padding: 12px; width: 80%; background: #222; border: 1px solid #444; color: white; margin-bottom: 15px; border-radius: 6px; font-size: 1rem; }
+        .btn-submit { background: #ffcc00; color: black; padding: 12px 30px; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; }
+        .btn-submit:hover { background: #e6b800; }
+
+        /* Leaderboard Table */
+        table { width: 100%; max-width: 900px; margin: 30px auto; border-collapse: collapse; background: #1a1a1a; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        th, td { padding: 15px; border: 1px solid #333; text-align: center; }
+        th { background: #333; color: #ffcc00; text-transform: uppercase; font-size: 0.9rem; }
+        tr:nth-child(even) { background: #222; }
     </style>
 </head>
 <body>
 
-    <h1>🎬 MOVIE MADNESS</h1>
+    <h1>🎬 Movie Madness</h1>
+    
+    <div class="bracket-outer" id="bracket"></div>
 
-    <div id="bracket-container" class="bracket-outer"></div>
-
-    <div style="margin: 20px;">
-        <h2 id="champ-name">Pick Your Winner</h2>
-        <input type="text" id="u-name" placeholder="Your Name" style="padding: 10px;">
-        <button onclick="sendIt()" style="background: #ffcc00; color: black; font-weight: bold;">SUBMIT</button>
+    <div class="controls">
+        <div id="champion" style="font-size:2rem; color:#ffcc00; margin-bottom:20px; font-weight: bold;">Predict Your Winner</div>
+        <input type="text" id="userName" placeholder="Enter Your Bracket Name...">
+        <br>
+        <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
 
     <table>
-        <thead><tr><th>Rank</th><th>Name</th><th>Score</th></tr></thead>
-        <tbody id="l-body"><tr><td colspan="3">Waiting for Sheets...</td></tr></tbody>
+        <thead>
+            <tr><th>Rank</th><th>Name</th><th>Score</th></tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            <tr><td colspan="3">Loading data from Google Sheets...</td></tr>
+        </tbody>
     </table>
 
 <script>
-// --- DATA ---
-const movies = [
-    "Shawshank", "Airplane!", "Social Network", "Die Hard", "Fight Club", "Eternal Sunshine", "Interstellar", "Mr. Smith",
-    "Few Good Men", "Trading Places", "Matrix", "Beautiful Mind", "Shining", "Shutter Island", "Goodfellas", "Willy Wonka",
-    "Godfather", "Groundhog Day", "Strangelove", "Truman Show", "2001", "Wonderful Life", "12 Angry Men", "Best in Show",
-    "Budapest Hotel", "Full Metal Jacket", "Back to the Future", "Major League", "Jaws", "Train Dreams", "Star Wars", "Casablanca",
-    "Dark Knight", "Monty Python", "Dead Poets", "Coming to America", "Ferris Bueller", "League of Their Own", "Raiders", "Moonrise Kingdom",
-    "Breakfast Club", "Cool Hand Luke", "Whiplash", "Harry Potter", "Karate Kid", "National Lampoon", "Good Will Hunting", "Spinal Tap",
-    "Pulp Fiction", "Caddyshack", "Ghostbusters", "Infinity War", "La La Land", "Catch Me", "Princess Bride", "Field of Dreams",
-    "Inception", "Rounders", "Usual Suspects", "WarGames", "Spider-Verse", "Cuckoo's Nest", "Se7en", "Stranger Than Fiction"
+// --- 1. MOVIE DATA ---
+const initialMovies = [
+    { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
+    { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
+    { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine" },
+    { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to DC" },
+    { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
+    { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
+    { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
+    { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka" },
+    { seed: 1, name: "The Godfather" }, { seed: 16, name: "Groundhog Day" },
+    { seed: 8, name: "Dr. Strangelove" }, { seed: 9, name: "The Truman Show" },
+    { seed: 5, name: "2001: Space Odyssey" }, { seed: 12, name: "It's a Wonderful Life" },
+    { seed: 4, name: "12 Angry Men" }, { seed: 13, name: "Best in Show" },
+    { seed: 6, name: "Grand Budapest Hotel" }, { seed: 11, name: "Full Metal Jacket" },
+    { seed: 3, name: "Back to the Future" }, { seed: 14, name: "Major League" },
+    { seed: 7, name: "Jaws" }, { seed: 10, name: "Train Dreams" },
+    { seed: 2, name: "Star Wars IV" }, { seed: 15, name: "Casablanca" },
+    { seed: 1, name: "The Dark Knight" }, { seed: 16, name: "Monty Python" },
+    { seed: 8, name: "Dead Poets Society" }, { seed: 9, name: "Coming to America" },
+    { seed: 5, name: "Ferris Bueller" }, { seed: 12, name: "League of Their Own" },
+    { seed: 4, name: "Raiders of the Lost Ark" }, { seed: 13, name: "Moonrise Kingdom" },
+    { seed: 6, name: "The Breakfast Club" }, { seed: 11, name: "Cool Hand Luke" },
+    { seed: 3, name: "Whiplash" }, { seed: 14, name: "Harry Potter 8" },
+    { seed: 7, name: "The Karate Kid" }, { seed: 10, name: "National Lampoon" },
+    { seed: 2, name: "Good Will Hunting" }, { seed: 15, name: "Spinal Tap" },
+    { seed: 1, name: "Pulp Fiction" }, { seed: 16, name: "Caddyshack" },
+    { seed: 8, name: "Ghostbusters" }, { seed: 9, name: "Avengers: Infinity War" },
+    { seed: 5, name: "La La Land" }, { seed: 12, name: "Catch Me If You Can" },
+    { seed: 4, name: "The Princess Bride" }, { seed: 13, name: "Field of Dreams" },
+    { seed: 6, name: "Inception" }, { seed: 11, name: "Rounders" },
+    { seed: 3, name: "The Usual Suspects" }, { seed: 14, name: "WarGames" },
+    { seed: 7, name: "Spider-Verse" }, { seed: 10, name: "Cuckoo's Nest" },
+    { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
 ];
 
-let myData = [[]];
-// Setup Round 1
-for (let i = 0; i < movies.length; i += 2) {
-    myData[0].push([movies[i], movies[i+1]]);
+let userBracket = [[]];
+for (let i = 0; i < initialMovies.length; i += 2) {
+    userBracket[0].push([initialMovies[i], initialMovies[i + 1]]);
 }
 
-// --- DRAW ---
-function draw() {
-    const cont = document.getElementById("bracket-container");
-    cont.innerHTML = "";
-    myData.forEach((round, rIdx) => {
-        const rDiv = document.createElement("div");
-        rDiv.className = "round";
-        rDiv.innerHTML = `<h3>Round ${rIdx+1}</h3>`;
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
+
+// --- 2. RENDER BRACKET ---
+function drawBracket() {
+    const container = document.getElementById("bracket");
+    container.innerHTML = "";
+    userBracket.forEach((round, rIdx) => {
+        const div = document.createElement("div");
+        div.className = "round";
+        div.innerHTML = `<h3>Round ${rIdx+1}</h3>`;
         round.forEach((m, mIdx) => {
             const mDiv = document.createElement("div");
             mDiv.className = "matchup";
             m.forEach((team, tIdx) => {
                 const b = document.createElement("button");
-                b.innerText = team || "TBD";
+                b.innerHTML = team ? `<span class="seed">${team.seed}</span> ${team.name}` : "TBD";
                 b.onclick = () => {
                     if (!team) return;
-                    if (!myData[rIdx+1]) myData[rIdx+1] = [];
+                    if (!userBracket[rIdx+1]) userBracket[rIdx+1] = [];
                     const nextM = Math.floor(mIdx/2);
-                    if (!myData[rIdx+1][nextM]) myData[rIdx+1][nextM] = [null, null];
-                    myData[rIdx+1][nextM][mIdx%2] = team;
-                    if (rIdx === 5) document.getElementById("champ-name").innerText = "🏆 " + team;
-                    draw();
+                    if (!userBracket[rIdx+1][nextM]) userBracket[rIdx+1][nextM] = [null, null];
+                    userBracket[rIdx+1][nextM][mIdx%2] = team;
+                    if (rIdx === 5) document.getElementById("champion").innerText = "🏆 " + team.name;
+                    drawBracket();
                 };
                 mDiv.appendChild(b);
             });
-            rDiv.appendChild(mDiv);
+            div.appendChild(mDiv);
         });
-        cont.appendChild(rDiv);
+        container.appendChild(div);
     });
 }
 
-// --- GOOGLE ---
-const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
+// --- 3. SUBMIT TO GOOGLE FORM ---
+function submitBracket() {
+    const name = document.getElementById("userName").value || "Anonymous";
+    const formData = new FormData();
+    formData.append("entry.674437929", name);
+    formData.append("entry.1121614126", JSON.stringify(userBracket));
+    fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
+    .then(() => alert("Bracket Submitted! Refresh in 30 seconds to see your name."))
+    .catch(() => alert("Error submitting bracket."));
+}
 
-async function getScores() {
+// --- 4. LEADERBOARD LOAD ---
+async function loadScores() {
+    const tbody = document.getElementById("leaderboard-body");
     try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(sheetURL)}&t=${Date.now()}`);
-        const json = await res.json();
-        const rows = json.contents.split("\n").filter(r => r.trim() !== "");
-        const body = document.getElementById("l-body");
-        body.innerHTML = "";
+        // Using a proxy to bypass potential CORS issues
+        const proxy = 'https://api.allorigins.win/get?url=';
+        const response = await fetch(proxy + encodeURIComponent(csvUrl) + '&t=' + Date.now());
+        const json = await response.json();
+        const csvText = json.contents;
+        
+        if (!csvText) return;
+
+        const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "");
+        console.log("Found rows in CSV:", rows.length);
+
+        tbody.innerHTML = "";
         
         if (rows.length <= 1) {
-            body.innerHTML = "<tr><td colspan='3'>No entries found yet.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='3'>Sheet connected, but no entries found yet.</td></tr>";
             return;
         }
 
-        rows.slice(1).forEach((r, i) => {
-            const cols = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            // Index [2] is Column C. Change to [1] if your names are in Column B.
-            let name = cols[1] ? cols[1].replace(/"/g, "") : "User";
-            body.innerHTML += `<tr><td>${i+1}</td><td>${name}</td><td>0</td></tr>`;
+        // Slice(1) skips the header row
+        rows.slice(1).forEach((row, i) => {
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            
+            // ADJUST THIS INDEX: 0=A, 1=B, 2=C. Usually Name is in Column C (Index 2)
+            let name = cols[2] ? cols[2].replace(/"/g, "").trim() : "Anonymous";
+            
+            if (name && name.toLowerCase() !== "name") {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${i+1}</td><td>${name}</td><td>0</td>`;
+                tbody.appendChild(tr);
+            }
         });
-    } catch (e) { console.log(e); }
+
+    } catch (e) {
+        console.error("Leaderboard Error:", e);
+        tbody.innerHTML = "<tr><td colspan='3'>Offline Mode: Could not reach Google Sheets.</td></tr>";
+    }
 }
 
-function sendIt() {
-    const name = document.getElementById("u-name").value || "Anon";
-    const form = new FormData();
-    form.append("entry.674437929", name);
-    form.append("entry.1121614126", JSON.stringify(myData));
-    fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: form })
-    .then(() => alert("Sent!"));
-}
-
-draw();
-getScores();
+// --- INITIALIZE ---
+drawBracket();
+loadScores();
+setInterval(loadScores, 30000); // Auto-refresh leaderboard every 30 seconds
 </script>
 </body>
 </html>
