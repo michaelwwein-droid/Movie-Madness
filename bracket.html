@@ -3,38 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Madness</title>
+    <title>Movie Madness | Bracket & Leaderboard</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; }
-        h1 { text-align: center; color: #ffcc00; }
-        .bracket-outer { display: flex; padding: 20px; overflow-x: auto; background: #1a1a1a; border-radius: 10px; }
-        .round { display: flex; flex-direction: column; width: 200px; margin-right: 40px; flex-shrink: 0; }
-        .matchup { display: flex; flex-direction: column; margin: 10px 0; justify-content: center; min-height: 80px; }
-        /* Dynamic spacing for rounds */
-        .round:nth-child(2) .matchup { min-height: 160px; }
-        .round:nth-child(3) .matchup { min-height: 320px; }
-        .round:nth-child(4) .matchup { min-height: 640px; }
-        button { background: #333; color: white; border: 1px solid #444; padding: 8px; margin: 2px 0; cursor: pointer; width: 100%; text-align: left; border-radius: 4px; }
-        button:hover { border-color: #ffcc00; }
-        .seed { color: #ffcc00; font-weight: bold; margin-right: 5px; }
-        .controls { text-align: center; margin: 20px auto; padding: 20px; background: #1a1a1a; max-width: 500px; border-radius: 10px; }
-        input { padding: 10px; width: 70%; margin-bottom: 10px; }
-        table { width: 100%; max-width: 800px; margin: 20px auto; border-collapse: collapse; background: #1a1a1a; }
-        th, td { padding: 12px; border: 1px solid #333; text-align: center; }
-        th { color: #ffcc00; background: #222; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #eee; padding: 20px; margin: 0; }
+        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* Bracket Layout */
+        .bracket-outer { display: flex; padding: 40px; overflow-x: auto; min-height: 450px; background: #1a1a1a; border-radius: 12px; margin-bottom: 30px; }
+        .round { display: flex; flex-direction: column; width: 240px; margin-right: 50px; flex-shrink: 0; }
+        .matchup { display: flex; flex-direction: column; justify-content: center; min-height: 100px; margin: 10px 0; }
+        
+        /* Spacing for bracket depth */
+        .round:nth-child(2) .matchup { min-height: 200px; }
+        .round:nth-child(3) .matchup { min-height: 400px; }
+        .round:nth-child(4) .matchup { min-height: 800px; }
+
+        button { background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; margin: 2px 0; cursor: pointer; border-radius: 4px; text-align: left; width: 100%; transition: 0.2s; }
+        button:hover { border-color: #ffcc00; background: #333; }
+        .seed { color: #ffcc00; font-weight: bold; margin-right: 8px; font-size: 0.8rem; }
+
+        .controls { text-align: center; margin: 40px auto; background: #1a1a1a; padding: 30px; border-radius: 12px; max-width: 550px; border: 1px solid #333; }
+        input { padding: 12px; width: 80%; background: #222; border: 1px solid #444; color: white; margin-bottom: 15px; border-radius: 6px; font-size: 1rem; }
+        .btn-submit { background: #ffcc00; color: black; padding: 12px 30px; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; }
+        .btn-submit:hover { background: #e6b800; }
+
+        /* Leaderboard Table */
+        table { width: 100%; max-width: 900px; margin: 30px auto; border-collapse: collapse; background: #1a1a1a; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        th, td { padding: 15px; border: 1px solid #333; text-align: center; }
+        th { background: #333; color: #ffcc00; text-transform: uppercase; font-size: 0.9rem; }
+        tr:nth-child(even) { background: #222; }
     </style>
 </head>
 <body>
 
     <h1>🎬 Movie Madness</h1>
     
-    <div id="bracket" class="bracket-outer"></div>
+    <div class="bracket-outer" id="bracket"></div>
 
     <div class="controls">
-        <div id="champion" style="font-size: 1.5rem; color: #ffcc00; margin-bottom: 10px;">Select Your Winner</div>
-        <input type="text" id="userName" placeholder="Bracket Name...">
+        <div id="champion" style="font-size:2rem; color:#ffcc00; margin-bottom:20px; font-weight: bold;">Predict Your Winner</div>
+        <input type="text" id="userName" placeholder="Enter Your Bracket Name...">
         <br>
-        <button style="width: auto; background: #ffcc00; color: black; font-weight: bold; padding: 10px 20px;" onclick="submitBracket()">Submit Bracket</button>
+        <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
 
     <table>
@@ -42,13 +52,13 @@
             <tr><th>Rank</th><th>Name</th><th>Score</th></tr>
         </thead>
         <tbody id="leaderboard-body">
-            <tr><td colspan="3">Loading rankings...</td></tr>
+            <tr><td colspan="3">Loading data from Google Sheets...</td></tr>
         </tbody>
     </table>
 
 <script>
-// 1. DATA
-const movies = [
+// --- 1. MOVIE DATA ---
+const initialMovies = [
     { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
     { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
     { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine" },
@@ -84,14 +94,14 @@ const movies = [
 ];
 
 let userBracket = [[]];
-for (let i = 0; i < movies.length; i += 2) {
-    userBracket[0].push([movies[i], movies[i + 1]]);
+for (let i = 0; i < initialMovies.length; i += 2) {
+    userBracket[0].push([initialMovies[i], initialMovies[i + 1]]);
 }
 
 const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
 
-// 2. RENDER BRACKET
-function draw() {
+// --- 2. RENDER BRACKET ---
+function drawBracket() {
     const container = document.getElementById("bracket");
     container.innerHTML = "";
     userBracket.forEach((round, rIdx) => {
@@ -111,7 +121,7 @@ function draw() {
                     if (!userBracket[rIdx+1][nextM]) userBracket[rIdx+1][nextM] = [null, null];
                     userBracket[rIdx+1][nextM][mIdx%2] = team;
                     if (rIdx === 5) document.getElementById("champion").innerText = "🏆 " + team.name;
-                    draw();
+                    drawBracket();
                 };
                 mDiv.appendChild(b);
             });
@@ -121,10 +131,63 @@ function draw() {
     });
 }
 
-// 3. SUBMIT
+// --- 3. SUBMIT TO GOOGLE FORM ---
 function submitBracket() {
     const name = document.getElementById("userName").value || "Anonymous";
     const formData = new FormData();
     formData.append("entry.674437929", name);
     formData.append("entry.1121614126", JSON.stringify(userBracket));
-    fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors
+    fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
+    .then(() => alert("Bracket Submitted! Refresh in 30 seconds to see your name."))
+    .catch(() => alert("Error submitting bracket."));
+}
+
+// --- 4. LEADERBOARD LOAD ---
+async function loadScores() {
+    const tbody = document.getElementById("leaderboard-body");
+    try {
+        // Using a proxy to bypass potential CORS issues
+        const proxy = 'https://api.allorigins.win/get?url=';
+        const response = await fetch(proxy + encodeURIComponent(csvUrl) + '&t=' + Date.now());
+        const json = await response.json();
+        const csvText = json.contents;
+        
+        if (!csvText) return;
+
+        const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "");
+        console.log("Found rows in CSV:", rows.length);
+
+        tbody.innerHTML = "";
+        
+        if (rows.length <= 1) {
+            tbody.innerHTML = "<tr><td colspan='3'>Sheet connected, but no entries found yet.</td></tr>";
+            return;
+        }
+
+        // Slice(1) skips the header row
+        rows.slice(1).forEach((row, i) => {
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            
+            // ADJUST THIS INDEX: 0=A, 1=B, 2=C. Usually Name is in Column C (Index 2)
+            let name = cols[2] ? cols[2].replace(/"/g, "").trim() : "Anonymous";
+            
+            if (name && name.toLowerCase() !== "name") {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${i+1}</td><td>${name}</td><td>0</td>`;
+                tbody.appendChild(tr);
+            }
+        });
+
+    } catch (e) {
+        console.error("Leaderboard Error:", e);
+        tbody.innerHTML = "<tr><td colspan='3'>Offline Mode: Could not reach Google Sheets.</td></tr>";
+    }
+}
+
+// --- INITIALIZE ---
+drawBracket();
+loadScores();
+setInterval(loadScores, 30000); // Auto-refresh leaderboard every 30 seconds
+</script>
+</body>
+</html>
