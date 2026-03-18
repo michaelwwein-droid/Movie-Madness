@@ -185,7 +185,7 @@
         { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
     ];
 
-    let rounds = [[]];
+  let rounds = [[]];
     for (let i = 0; i < initialMovies.length; i += 2) {
         rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
     }
@@ -203,10 +203,10 @@
                 matchup.forEach((movie, k) => {
                     const btn = document.createElement("button");
                     if (movie) {
-                        btn.innerHTML = `<span class="seed">${movie.seed}</span> ${movie.name}`;
+                        btn.innerHTML = `<span>${movie.seed}</span> ${movie.name}`;
                         btn.onclick = () => selectWinner(i, j, k);
                     } else {
-                        btn.innerHTML = `<span class="seed">?</span> <i>TBD</i>`;
+                        btn.innerHTML = `<span>?</span> TBD`;
                         btn.style.opacity = "0.3";
                     }
                     matchDiv.appendChild(btn);
@@ -242,76 +242,52 @@
     }
 
     // --- LEADERBOARD LOGIC ---
-   async function updateLeaderboard() {
-    const tbody = document.getElementById("leaderboard-body");
-    try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
-        const response = await fetch(proxyUrl);
-        const json = await response.json();
-        const csvText = json.contents;
-
-        if (!csvText) {
-            tbody.innerHTML = "<tr><td colspan='4'>No data found in sheet.</td></tr>";
-            return;
-        }
-
-        const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
-        const users = [];
-
-        // Start from 1 to skip headers
-        for (let i = 1; i < rows.length; i++) {
-            // This regex allows us to ignore commas that are inside the bracket JSON
-            const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-            
-            // ADJUSTED COLUMNS BASED ON YOUR SHEET:
-            // Column C is index [2]
-            const name = columns[2] ? columns[2].replace(/"/g, "") : "Anonymous";
-            
-            // Column D is index [3]
-            let rawJson = columns[3] || "[]";
-            
-            let bracketData = [];
-            try {
-                // Remove Google's wrapping quotes and fix double-quotes
-                let cleanJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
-                bracketData = JSON.parse(cleanJson);
-            } catch (e) {
-                console.warn("Skipping row - JSON error for:", name);
-            }
-
-            if (name && name !== "Anonymous") {
-                users.push({ name, rounds: bracketData });
-            }
-        }
-
-        let official = [];
+    async function updateLeaderboard() {
+        const tbody = document.getElementById("leaderboard-body");
         try {
-            const offRes = await fetch(officialBracketURL);
-            if (offRes.ok) official = await offRes.json();
-        } catch (e) { }
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
+            const response = await fetch(proxyUrl);
+            const json = await response.json();
+            const csvText = json.contents;
 
-        const scores = calculateScores(users, official);
-        tbody.innerHTML = ""; 
+            const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
+            const users = [];
 
-        if (scores.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4'>No entries found.</td></tr>";
-        } else {
+            for (let i = 1; i < rows.length; i++) {
+                const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+                
+                // MAPPED: Col 3 (Index 2) is Name | Col 4 (Index 3) is Bracket Data
+                let name = (columns[2] || "Anonymous").replace(/"/g, "").trim();
+                let rawJson = columns[3] || "[]";
+                
+                let bracketData = [];
+                try {
+                    let cleanJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
+                    bracketData = JSON.parse(cleanJson);
+                } catch (e) {}
+
+                if (name && name !== "Name") {
+                    users.push({ name, rounds: bracketData });
+                }
+            }
+
+            let official = [];
+            try {
+                const offRes = await fetch(officialBracketURL);
+                if (offRes.ok) official = await offRes.json();
+            } catch (e) {}
+
+            const scores = calculateScores(users, official);
+            tbody.innerHTML = ""; 
+
             scores.forEach((user, i) => {
                 const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td>${user.name}</td>
-                    <td>${user.score}</td>
-                    <td>${user.roundsCorrect}</td>
-                `;
+                tr.innerHTML = `<td>${i + 1}</td><td>${user.name}</td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
                 tbody.appendChild(tr);
             });
-        }
-    } catch (err) {
-        console.error("Leaderboard error:", err);
-        tbody.innerHTML = "<tr><td colspan='4'>Connection error. Refreshing in 30s...</td></tr>";
+        } catch (err) { tbody.innerHTML = "<tr><td colspan='4'>Error loading scores.</td></tr>"; }
     }
-}
+
     function calculateScores(users, official) {
         const scores = [];
         const normalize = (str) => str ? str.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
@@ -323,8 +299,8 @@
                     if (!user.rounds || !user.rounds[rIndex]) return;
                     const roundPoints = Math.pow(2, rIndex);
                     round.matchups.forEach((offMatch, mIndex) => {
-                        const offWin = Array.isArray(offMatch) ? offMatch[0]?.name : offMatch?.name;
-                        const userPick = user.rounds[rIndex][mIndex]?.name;
+                        const offWin = offMatch?.name;
+                        const userPick = user.rounds[rIndex][mIndex] ? (Array.isArray(user.rounds[rIndex][mIndex]) ? user.rounds[rIndex][mIndex][0]?.name : user.rounds[rIndex][mIndex]?.name) : null;
                         if (offWin && userPick && normalize(userPick) === normalize(offWin)) {
                             score += roundPoints;
                             roundsCorrect++;
