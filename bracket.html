@@ -5,38 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dead Movie Society | Movie Madness</title>
     <style>
-        /* --- THEME & LAYOUT --- */
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: #121212;
             color: #eeeeee;
             margin: 0;
             padding: 20px;
-            line-height: 1.6;
         }
 
-        h1, h2 {
-            text-align: center;
-            color: #ffcc00;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-        }
+        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; }
 
-        /* --- BRACKET GRAPHICS --- */
+        /* The Container */
         .bracket-outer {
             display: flex;
-            justify-content: flex-start;
-            padding: 40px 20px;
-            overflow-x: auto;
             gap: 40px;
-            min-height: 600px;
+            padding: 40px;
+            overflow-x: auto;
+            align-items: flex-start;
+            min-height: 800px;
         }
 
         .round {
             display: flex;
             flex-direction: column;
             justify-content: space-around;
-            min-width: 240px;
+            width: 220px;
             flex-shrink: 0;
         }
 
@@ -44,37 +37,13 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            margin: 10px 0;
+            margin: 20px 0;
             padding: 10px 0;
+            flex-grow: 1;
             justify-content: center;
         }
 
-        /* Connecting Lines */
-        .matchup::after {
-            content: "";
-            position: absolute;
-            right: -22px;
-            top: 50%;
-            width: 20px;
-            height: 50%;
-            border: 2px solid #444;
-            border-left: none;
-        }
-
-        .matchup:nth-child(odd)::after {
-            border-bottom: none;
-            border-radius: 0 8px 0 0;
-            top: 50%;
-        }
-
-        .matchup:nth-child(even)::after {
-            border-top: none;
-            border-radius: 0 0 8px 0;
-            top: 0;
-        }
-
-        .round:last-child .matchup::after { display: none; }
-
+        /* BUTTONS */
         .matchup button {
             display: flex;
             align-items: center;
@@ -82,263 +51,160 @@
             color: white;
             border: 1px solid #444;
             padding: 10px;
-            margin: 3px 0;
+            margin: 2px 0;
             cursor: pointer;
             border-radius: 4px;
-            font-size: 0.9rem;
-            text-align: left;
-            transition: 0.2s;
+            font-size: 0.85rem;
             z-index: 2;
         }
 
         .matchup button:hover { border-color: #ffcc00; background: #333; }
 
-        .seed {
-            background: #ffcc00;
-            color: #000;
-            font-weight: bold;
-            font-size: 0.7rem;
-            padding: 2px 5px;
-            border-radius: 2px;
-            margin-right: 8px;
-            min-width: 18px;
-            text-align: center;
+        .seed { color: #ffcc00; font-weight: bold; margin-right: 10px; width: 20px; }
+
+        /* LINES */
+        .matchup::after {
+            content: "";
+            position: absolute;
+            right: -22px;
+            width: 20px;
+            border: 2px solid #444;
+            border-left: none;
+            z-index: 1;
         }
 
-        /* --- CONTROLS & CHAMPION --- */
+        .matchup:nth-child(odd)::after {
+            height: 50%;
+            top: 50%;
+            border-bottom: none;
+            border-radius: 0 10px 0 0;
+        }
+
+        .matchup:nth-child(even)::after {
+            height: 50%;
+            bottom: 50%;
+            border-top: none;
+            border-radius: 0 0 10px 0;
+        }
+
+        .round:last-child .matchup::after { display: none; }
+
         .controls {
             text-align: center;
             background: #1a1a1a;
             padding: 30px;
+            max-width: 600px;
+            margin: 20px auto;
             border-radius: 12px;
             border: 1px solid #333;
-            max-width: 600px;
-            margin: 40px auto;
         }
 
-        .champion-area {
-            border: 2px gold dashed;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            background: rgba(255, 204, 0, 0.05);
-        }
+        #champion { font-size: 2rem; color: #ffcc00; font-weight: bold; margin: 20px 0; }
+        
+        input { padding: 10px; width: 60%; margin-bottom: 10px; background: #222; border: 1px solid #444; color: white; }
+        
+        .primary-btn { background: #ffcc00; color: black; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
 
-        #champion {
-            font-size: 1.8rem;
-            color: #ffcc00;
-            font-weight: bold;
-        }
-
-        input[type="text"] {
-            padding: 12px;
-            width: 60%;
-            border-radius: 4px;
-            border: 1px solid #444;
-            background: #2a2a2a;
-            color: white;
-            margin-bottom: 15px;
-        }
-
-        button.primary {
-            background: #ffcc00;
-            color: black;
-            font-weight: bold;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        /* --- LEADERBOARD --- */
-        table {
-            width: 100%;
-            max-width: 800px;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background: #1a1a1a;
-        }
-
-        th { background: #333; color: #ffcc00; padding: 15px; }
-        td { padding: 12px; border-bottom: 1px solid #2a2a2a; text-align: center; }
+        table { width: 100%; max-width: 800px; margin: 40px auto; border-collapse: collapse; background: #1a1a1a; }
+        th, td { padding: 12px; border: 1px solid #333; text-align: center; }
+        th { background: #333; color: #ffcc00; }
     </style>
 </head>
 <body>
 
     <h1>🎬 Movie Madness</h1>
-    <p style="text-align: center; color: #888;">Presented by Dead Movie Society</p>
 
     <div class="bracket-outer" id="bracket"></div>
 
     <div class="controls">
-        <div class="champion-area">
-            <h2>🏆 THE WINNER'S CIRCLE 🏆</h2>
-            <div id="champion">Select Your Winners Above</div>
-        </div>
-        
-        <input type="text" id="name" placeholder="Enter Your Bracket Name">
-        <button class="primary" onclick="submitForm()">Submit My Bracket</button>
-        <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">Don't forget to vote on @deadmoviesociety's stories!</p>
+        <div id="champion">Predict Your Winner</div>
+        <input type="text" id="name" placeholder="Bracket Name">
+        <button class="primary-btn" onclick="submitForm()">Submit Bracket</button>
     </div>
 
-    <div class="leaderboard-section">
-        <h2>Live Leaderboard</h2>
-        <table id="leaderboard">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Name</th>
-                    <th>Score</th>
-                    <th>Correct</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    <table id="leaderboard">
+        <thead>
+            <tr><th>Rank</th><th>Name</th><th>Score</th><th>Correct</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
-    <script>
-        // ---------------- MOVIES ----------------
-        const initialMovies = [
-            { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
-            { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
-            { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine" },
-            { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to Washington" },
-            { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
-            { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
-            { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
-            { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka" },
-            { seed: 1, name: "The Godfather" }, { seed: 16, name: "Groundhog Day" },
-            { seed: 8, name: "Dr. Strangelove" }, { seed: 9, name: "The Truman Show" },
-            { seed: 5, name: "2001: A Space Odyssey" }, { seed: 12, name: "It’s a Wonderful Life" },
-            { seed: 4, name: "Cuckoo’s Nest" }, { seed: 13, name: "Best in Show" },
-            { seed: 6, name: "Grand Budapest Hotel" }, { seed: 11, name: "Full Metal Jacket" },
-            { seed: 3, name: "Back to the Future" }, { seed: 14, name: "Major League" },
-            { seed: 7, name: "Jaws" }, { seed: 10, name: "Train Dreams" },
-            { seed: 2, name: "Star Wars: A New Hope" }, { seed: 15, name: "Casablanca" },
-            { seed: 1, name: "The Dark Knight" }, { seed: 16, name: "Monty Python" },
-            { seed: 8, name: "Dead Poets Society" }, { seed: 9, name: "Coming to America" },
-            { seed: 5, name: "Ferris Bueller" }, { seed: 12, name: "A League of Their Own" },
-            { seed: 4, name: "Raiders of the Lost Ark" }, { seed: 13, name: "Moonrise Kingdom" },
-            { seed: 6, name: "The Breakfast Club" }, { seed: 11, name: "Cool Hand Luke" },
-            { seed: 3, name: "Whiplash" }, { seed: 14, name: "Harry Potter 8" },
-            { seed: 7, name: "The Karate Kid" }, { seed: 10, name: "National Lampoon" },
-            { seed: 2, name: "Good Will Hunting" }, { seed: 15, name: "This Is Spinal Tap" },
-            { seed: 1, name: "Pulp Fiction" }, { seed: 16, name: "Caddyshack" },
-            { seed: 8, name: "Ghostbusters" }, { seed: 9, name: "Avengers: Infinity War" },
-            { seed: 5, name: "La La Land" }, { seed: 12, name: "Catch Me If You Can" },
-            { seed: 4, name: "The Princess Bride" }, { seed: 13, name: "Field of Dreams" },
-            { seed: 6, name: "Inception" }, { seed: 11, name: "Rounders" },
-            { seed: 3, name: "The Usual Suspects" }, { seed: 14, name: "WarGames" },
-            { seed: 7, name: "Spider-Verse" }, { seed: 10, name: "Cuckoo's Nest" },
-            { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
-        ];
+<script>
+    // Test with 16 movies first to ensure the bracket appears!
+    const initialMovies = [
+        { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
+        { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
+        { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine" },
+        { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to Washington" },
+        { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
+        { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
+        { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
+        { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka" }
+    ];
 
-        let rounds = [[]];
-        for (let i = 0; i < initialMovies.length; i += 2) {
-            rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
-        }
+    let rounds = [[]];
+    for (let i = 0; i < initialMovies.length; i += 2) {
+        rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
+    }
 
-        function renderBracket() {
-            const bracketDiv = document.getElementById("bracket");
-            bracketDiv.innerHTML = "";
-            rounds.forEach((round, i) => {
-                const roundDiv = document.createElement("div");
-                roundDiv.className = "round";
-                roundDiv.innerHTML = `<h3>Round ${i + 1}</h3>`;
-                round.forEach((matchup, j) => {
-                    const matchDiv = document.createElement("div");
-                    matchDiv.className = "matchup";
-                    matchup.forEach((movie, k) => {
-                        const btn = document.createElement("button");
-                        if (movie) {
-                            btn.innerHTML = `<span class="seed">${movie.seed}</span> ${movie.name}`;
-                            btn.onclick = () => selectWinner(i, j, k);
-                        } else {
-                            btn.innerHTML = `<span class="seed">?</span> <i>TBD</i>`;
-                            btn.style.opacity = "0.3";
-                        }
-                        matchDiv.appendChild(btn);
-                    });
-                    roundDiv.appendChild(matchDiv);
+    function renderBracket() {
+        const bracketDiv = document.getElementById("bracket");
+        bracketDiv.innerHTML = "";
+
+        rounds.forEach((round, i) => {
+            const roundDiv = document.createElement("div");
+            roundDiv.className = "round";
+            roundDiv.innerHTML = `<h3>Round ${i + 1}</h3>`;
+
+            round.forEach((matchup, j) => {
+                const matchDiv = document.createElement("div");
+                matchDiv.className = "matchup";
+
+                matchup.forEach((movie, k) => {
+                    const btn = document.createElement("button");
+                    if (movie) {
+                        btn.innerHTML = `<span class="seed">${movie.seed}</span> ${movie.name}`;
+                        btn.onclick = () => selectWinner(i, j, k);
+                    } else {
+                        btn.innerHTML = `<span class="seed">?</span> <i>TBD</i>`;
+                        btn.style.opacity = "0.3";
+                    }
+                    matchDiv.appendChild(btn);
                 });
-                bracketDiv.appendChild(roundDiv);
+                roundDiv.appendChild(matchDiv);
             });
+            bracketDiv.appendChild(roundDiv);
+        });
+    }
+
+    function selectWinner(roundIndex, matchIndex, choiceIndex) {
+        const winner = rounds[roundIndex][matchIndex][choiceIndex];
+        if (rounds.length <= roundIndex + 1) rounds.push([]);
+
+        const nextMatchIndex = Math.floor(matchIndex / 2);
+        if (!rounds[roundIndex + 1][nextMatchIndex]) {
+            rounds[roundIndex + 1][nextMatchIndex] = [null, null];
         }
 
-        function selectWinner(roundIndex, matchIndex, choiceIndex) {
-            const winner = rounds[roundIndex][matchIndex][choiceIndex];
-            if (rounds.length <= roundIndex + 1) rounds.push([]);
-            const nextPos = Math.floor(matchIndex / 2);
-            if (!rounds[roundIndex + 1][nextPos]) rounds[roundIndex + 1][nextPos] = [null, null];
-            rounds[roundIndex + 1][nextPos][matchIndex % 2] = winner;
-            
-            renderBracket();
-            
-            const lastRound = rounds[rounds.length - 1];
-            if (lastRound.length === 1 && lastRound[0][0]) {
-                document.getElementById("champion").innerText = `🏆 Champion: ${lastRound[0][0].name}`;
-            }
-        }
-
-        function submitForm() {
-            const name = document.getElementById("name").value || "Anonymous";
-            const data = JSON.stringify(rounds.map((round, r) => ({ round: r + 1, matchups: round })));
-            const formData = new FormData();
-            formData.append("entry.674437929", name);
-            formData.append("entry.1121614126", data);
-            fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
-                .then(() => alert("Bracket submitted!"))
-                .catch(() => alert("Submission failed!"));
-        }
-
-        const officialBracketURL = 'official_bracket.json';
-        const userBracketsURL = 'https://sheetdb.io/api/v1/zdvrwyp85u49u';
-
-        async function updateLeaderboard() {
-            try {
-                const [officialRes, usersRes] = await Promise.all([fetch(officialBracketURL), fetch(userBracketsURL)]);
-                const official = await officialRes.json();
-                const rawUsers = await usersRes.json();
-                const users = rawUsers.map(u => ({
-                    name: u.Name || "Anonymous",
-                    rounds: JSON.parse(u["Bracket Data"] || "[]")
-                }));
-                const scores = calculateScores(users, official);
-                const tbody = document.querySelector("#leaderboard tbody");
-                tbody.innerHTML = "";
-                scores.forEach((user, i) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `<td>${i + 1}</td><td>${user.name}</td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) { console.error("Leaderboard error:", err); }
-        }
-
-        function calculateScores(users, official) {
-            const scores = [];
-            const normalize = (str) => (str || "").toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim();
-            users.forEach(user => {
-                let score = 0, correct = 0;
-                official.forEach((round, rIndex) => {
-                    if (!user.rounds || !user.rounds[rIndex]) return;
-                    const pts = Math.pow(2, rIndex);
-                    round.matchups.forEach((match, mIndex) => {
-                        const offWinner = Array.isArray(match?.[0]) ? match[0][0]?.name : match?.[0]?.name;
-                        const userMatch = user.rounds[rIndex]?.matchups?.[mIndex];
-                        const userPick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
-                        if (offWinner && userPick && normalize(userPick) === normalize(offWinner)) {
-                            score += pts; correct++;
-                        }
-                    });
-                });
-                scores.push({ name: user.name, score, roundsCorrect: correct });
-            });
-            return scores.sort((a, b) => b.score - a.score);
-        }
-
+        rounds[roundIndex + 1][nextMatchIndex][matchIndex % 2] = winner;
         renderBracket();
-        updateLeaderboard();
-        setInterval(updateLeaderboard, 60000);
-    </script>
+
+        const lastRound = rounds[rounds.length - 1];
+        if (lastRound.length === 1 && lastRound[0][0]) {
+            document.getElementById("champion").innerText = "🏆 " + lastRound[0][0].name;
+        }
+    }
+
+    function submitForm() {
+        const name = document.getElementById("name").value || "Anonymous";
+        const data = JSON.stringify(rounds);
+        alert("Submitting as: " + name);
+        // Add your fetch logic here
+    }
+
+    // Run on load
+    renderBracket();
+
+</script>
 </body>
 </html>
