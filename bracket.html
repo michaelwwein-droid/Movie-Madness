@@ -244,74 +244,72 @@
     // --- LEADERBOARD LOGIC ---
     async function updateLeaderboard() {
         const tbody = document.getElementById("leaderboard-body");
-        try {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
-            const response = await fetch(proxyUrl);
-            const json = await response.json();
-            const csvText = json.contents;
+        try {async function updateLeaderboard() {
+    const tbody = document.getElementById("leaderboard-body");
+    try {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
+        const response = await fetch(proxyUrl);
+        const json = await response.json();
+        const csvText = json.contents;
 
-            const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
-            const users = [];
+        if (!csvText) {
+            tbody.innerHTML = "<tr><td colspan='4'>No data from Google.</td></tr>";
+            return;
+        }
 
-            for (let i = 1; i < rows.length; i++) {
-                const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-                
-                // MAPPED: Col 3 (Index 2) is Name | Col 4 (Index 3) is Bracket Data
-                let name = (columns[2] || "Anonymous").replace(/"/g, "").trim();
-                let rawJson = columns[3] || "[]";
-                
-                let bracketData = [];
-                try {
-                    let cleanJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
-                    bracketData = JSON.parse(cleanJson);
-                } catch (e) {}
+        const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
+        const users = [];
 
-                if (name && name !== "Name") {
-                    users.push({ name, rounds: bracketData });
-                }
-            }
+        // This handles the data extraction
+        for (let i = 1; i < rows.length; i++) {
+            const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+            
+            // --- DEBUG LOGGING ---
+            // This will show you EXACTLY what is in each column in your browser console
+            if (i === 1) console.log("Column Check for Row 1:", columns);
 
-            let official = [];
+            // Based on your latest: 1:Timestamp, 2:Email, 3:Name, 4:Bracket
+            // If the console shows Name in a different spot, change the numbers below
+            let name = (columns[2] || "").replace(/"/g, "").trim();
+            let rawJson = columns[3] || "[]";
+            
+            let bracketData = [];
             try {
-                const offRes = await fetch(officialBracketURL);
-                if (offRes.ok) official = await offRes.json();
+                let cleanJson = rawJson.replace(/^"|"$/g, '').replace(/""/g, '"');
+                if (cleanJson.startsWith("[")) {
+                    bracketData = JSON.parse(cleanJson);
+                }
             } catch (e) {}
 
-            const scores = calculateScores(users, official);
-            tbody.innerHTML = ""; 
+            if (name && name !== "Name") {
+                users.push({ name, rounds: bracketData });
+            }
+        }
 
+        let official = [];
+        try {
+            const offRes = await fetch(officialBracketURL);
+            if (offRes.ok) official = await offRes.json();
+        } catch (e) {}
+
+        const scores = calculateScores(users, official);
+        tbody.innerHTML = ""; 
+
+        if (scores.length === 0) {
+            // This means 'users' array is empty because the 'if(name)' check failed
+            tbody.innerHTML = "<tr><td colspan='4'>No entries found. Check Console (F12).</td></tr>";
+        } else {
             scores.forEach((user, i) => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `<td>${i + 1}</td><td>${user.name}</td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
                 tbody.appendChild(tr);
             });
-        } catch (err) { tbody.innerHTML = "<tr><td colspan='4'>Error loading scores.</td></tr>"; }
+        }
+    } catch (err) {
+        console.error("Leaderboard error:", err);
+        tbody.innerHTML = "<tr><td colspan='4'>Error loading scores.</td></tr>";
     }
-
-    function calculateScores(users, official) {
-        const scores = [];
-        const normalize = (str) => str ? str.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
-
-        users.forEach(user => {
-            let score = 0, roundsCorrect = 0;
-            if (official && official.length > 0) {
-                official.forEach((round, rIndex) => {
-                    if (!user.rounds || !user.rounds[rIndex]) return;
-                    const roundPoints = Math.pow(2, rIndex);
-                    round.matchups.forEach((offMatch, mIndex) => {
-                        const offWin = offMatch?.name;
-                        const userPick = user.rounds[rIndex][mIndex] ? (Array.isArray(user.rounds[rIndex][mIndex]) ? user.rounds[rIndex][mIndex][0]?.name : user.rounds[rIndex][mIndex]?.name) : null;
-                        if (offWin && userPick && normalize(userPick) === normalize(offWin)) {
-                            score += roundPoints;
-                            roundsCorrect++;
-                        }
-                    });
-                });
-            }
-            scores.push({ name: user.name, score, roundsCorrect });
-        });
-        return scores.sort((a, b) => b.score - a.score);
-    }
+}
 
     renderBracket();
     updateLeaderboard();
