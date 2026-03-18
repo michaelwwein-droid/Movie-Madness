@@ -233,6 +233,114 @@
     }
 
     renderBracket();
+     const officialBracketURL = 'official_bracket.json'; // hosted official bracket JSON
+        const userBracketsURL = 'https://sheetdb.io/api/v1/zdvrwyp85u49u'; // replace with your SheetDB URL
+
+        async function updateLeaderboard() {
+            try {
+                const [officialRes, usersRes] = await Promise.all([
+                    fetch(officialBracketURL),
+                    fetch(userBracketsURL)
+                ]);
+
+                const official = await officialRes.json();
+                const rawUsers = await usersRes.json();
+
+                // Map the raw SheetDB data to a usable format
+                const users = rawUsers.map(u => {
+                    let userRounds = [];
+                    try {
+                        // Use bracket notation ["Bracket Data"] because of the space in the column name
+                        userRounds = JSON.parse(u["Bracket Data"] || "[]");
+                    } catch (e) {
+                        console.error("Error parsing bracket for user:", u.Name, e);
+                    }
+
+                    return {
+                        name: u.Name || "Anonymous",
+                        rounds: userRounds
+                    };
+                });
+
+                const scores = calculateScores(users, official);
+
+                const tbody = document.querySelector("#leaderboard tbody");
+                tbody.innerHTML = "";
+
+                scores.forEach((user, i) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td>${user.name}</td>
+                <td>${user.score}</td>
+                <td>${user.roundsCorrect}</td>
+            `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Leaderboard error:", err);
+            }
+        }
+
+        function calculateScores(users, official) {
+            const scores = [];
+
+            // Cleans strings so "1 The Matrix" matches "the matrix"
+            function normalize(str) {
+                if (!str) return "";
+                return str.toString()
+                    .toLowerCase()
+                    .replace(/^\d+\s*/, "") // Remove leading numbers/seeds
+                    .replace(/[^a-z0-9]/g, "") // Remove special characters and spaces
+                    .trim();
+            }
+
+            users.forEach(user => {
+                let score = 0;
+                let roundsCorrect = 0;
+
+                official.forEach((round, rIndex) => {
+                    if (!user.rounds || !user.rounds[rIndex]) return;
+
+                    // Scoring logic: Round 1 = 1pt, Round 2 = 2pts, Round 3 = 4pts...
+                    const roundPoints = Math.pow(2, rIndex);
+
+                    round.matchups.forEach((match, mIndex) => {
+                        // 1. Get Official Winner
+                        // Handles: [ [{name: "X"}] ] OR [ {name: "X"} ]
+                        const offMatch = Array.isArray(match) ? match[0] : match;
+                        const officialWinner = Array.isArray(offMatch) ? offMatch[0]?.name : offMatch?.name;
+
+                        // 2. Get User Pick
+                        const userMatch = user.rounds[rIndex]?.matchups?.[mIndex];
+                        const userPick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
+
+                        // 3. Compare
+                        if (officialWinner && userPick) {
+                            if (normalize(userPick) === normalize(officialWinner)) {
+                                score += roundPoints;
+                                roundsCorrect++;
+                            }
+                        }
+                    });
+                });
+
+                scores.push({ name: user.name, score, roundsCorrect });
+            });
+
+            // Sort: Highest score at the top
+            return scores.sort((a, b) => b.score - a.score);
+        }
+        // ---------------- INITIAL RENDER ----------------
+        renderBracket();
+        updateLeaderboard();
+        setInterval(updateLeaderboard, 30000); // refresh every 30s
+
+    </script>
+</body>
+
+</html>
 </script>
 </body>
 </html>
