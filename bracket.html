@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Madness Bracket + Live Leaderboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+        }
+
+        .bracket-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: nowrap;
+            margin-bottom: 30px;
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            margin: 0 15px;
+        }
+
+        .round h3 {
+            text-align: center;
+        }
+
+        .matchup {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .matchup button {
+            display: block;
+            width: 220px;
+            margin: 2px 0;
+            padding: 5px;
+            cursor: pointer;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        .seed {
+            font-weight: bold;
+            margin-right: 5px;
+            color: #555;
+        }
+
+        .champion {
+            font-size: 1.6em;
+            color: darkgreen;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 60%;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #333;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Movie Madness Bracket</h1>
+    <div class="bracket-container" id="bracket"></div>
+
+    <button onclick="downloadBracket()">Download My Bracket</button>
+
+    <form id="emailForm">
+        <input type="text" id="name" placeholder="Your Name (optional)">
+        <input type="hidden" id="bracketData">
+        <button type="button" onclick="submitForm()">Submit Bracket</button>
+    </form>
+
+    <div id="champion" class="champion"></div>
+
+    <h2>Live Leaderboard</h2>
+    <table id="leaderboard">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Score</th>
+                <th>Rounds Correct</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // ---------------- MOVIES ----------------
+        const initialMovies = [
+            { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
+            { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
+            { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine of the Spotless Mind" },
+            { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to Washington" },
+            { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
+            { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
+            { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
+            { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka & the Chocolate Factory" },
+            { seed: 1, name: "The Godfather" }, { seed: 16, name: "Groundhog Day" },
+            { seed: 8, name: "Dr. Strangelove" }, { seed: 9, name: "The Truman Show" },
+            { seed: 5, name: "2001: A Space Odyssey" }, { seed: 12, name: "It’s a Wonderful Life" },
+            { seed: 4, name: "One Flew Over the Cuckoo’s Nest" }, { seed: 13, name: "Best in Show" },
+            { seed: 6, name: "The Grand Budapest Hotel" }, { seed: 11, name: "Full Metal Jacket" },
+            { seed: 3, name: "Back to the Future" }, { seed: 14, name: "Major League" },
+            { seed: 7, name: "Jaws" }, { seed: 10, name: "Train Dreams" },
+            { seed: 2, name: "Star Wars: Episode IV – A New Hope" }, { seed: 15, name: "Casablanca" },
+            { seed: 1, name: "The Dark Knight" }, { seed: 16, name: "Monty Python and the Holy Grail" },
+            { seed: 8, name: "Dead Poets Society" }, { seed: 9, name: "Coming to America" },
+            { seed: 5, name: "Ferris Bueller’s Day Off" }, { seed: 12, name: "A League of Their Own" },
+            { seed: 4, name: "Raiders of the Lost Ark" }, { seed: 13, name: "Moonrise Kingdom" },
+            { seed: 6, name: "The Breakfast Club" }, { seed: 11, name: "Cool Hand Luke" },
+            { seed: 3, name: "Whiplash" }, { seed: 14, name: "Harry Potter and the Deathly Hallows – Part 2" },
+            { seed: 7, name: "The Karate Kid" }, { seed: 10, name: "National Lampoon’s Vacation" },
+            { seed: 2, name: "Good Will Hunting" }, { seed: 15, name: "This Is Spinal Tap" },
+            { seed: 1, name: "Pulp Fiction" }, { seed: 16, name: "Caddyshack" },
+            { seed: 8, name: "Ghostbusters" }, { seed: 9, name: "Avengers: Infinity War" },
+            { seed: 5, name: "La La Land" }, { seed: 12, name: "Catch Me If You Can" },
+            { seed: 4, name: "The Princess Bride" }, { seed: 13, name: "Field of Dreams" },
+            { seed: 6, name: "Inception" }, { seed: 11, name: "Rounders" },
+            { seed: 3, name: "The Usual Suspects" }, { seed: 14, name: "WarGames" },
+            { seed: 7, name: "Spider-Man: Across the Spider-Verse" }, { seed: 10, name: "One Flew Over the Cuckoo’s Nest" },
+            { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
+        ];
+
+        // ---------------- INIT ----------------
+        let rounds = [];
+        rounds.push([]);
+        for (let i = 0; i < initialMovies.length; i += 2) {
+            rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
+        }
+
+        // ---------------- RENDER ----------------
+        function renderBracket() {
+            const bracketDiv = document.getElementById("bracket");
+            bracketDiv.innerHTML = "";
+
+            rounds.forEach((round, i) => {
+                const roundDiv = document.createElement("div");
+                roundDiv.className = "round";
+                roundDiv.innerHTML = `<h3>Round ${i + 1}</h3>`;
+
+                round.forEach((matchup, j) => {
+                    const matchDiv = document.createElement("div");
+                    matchDiv.className = "matchup";
+
+                    matchup.forEach((movie, k) => {
+                        if (movie) {
+                            const btn = document.createElement("button");
+                            btn.innerHTML = `<span class="seed">(${movie.seed})</span>${movie.name}`;
+                            btn.onclick = () => selectWinner(i, j, k);
+                            matchDiv.appendChild(btn);
+                        }
+                    });
+
+                    roundDiv.appendChild(matchDiv);
+                });
+
+                bracketDiv.appendChild(roundDiv);
+            });
+        }
+
+        // ---------------- SELECT WINNER ----------------
+        function selectWinner(roundIndex, matchIndex, choiceIndex) {
+            const winner = rounds[roundIndex][matchIndex][choiceIndex];
+
+            if (rounds.length <= roundIndex + 1) rounds.push([]);
+
+            const nextPos = Math.floor(matchIndex / 2);
+            if (!rounds[roundIndex + 1][nextPos]) rounds[roundIndex + 1][nextPos] = [null, null];
+
+            const slot = matchIndex % 2;
+            rounds[roundIndex + 1][nextPos][slot] = winner;
+
+            renderBracket();
+
+            const lastRound = rounds[rounds.length - 1];
+            if (lastRound.length === 1 && lastRound[0][0] && !lastRound[0][1]) {
+                document.getElementById("champion").innerText =
+                    `🏆 Champion: ${lastRound[0][0].name}`;
+            }
+
+            // Update leaderboard whenever a winner is selected
+            updateLeaderboard();
+        }
+
+        // ---------------- DOWNLOAD ----------------
+        function downloadBracket() {
+            const output = rounds.map((round, r) => ({ round: r + 1, matchups: round }));
+            const data = JSON.stringify(output, null, 2);
+            const blob = new Blob([data], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "my_movie_bracket.json";
+            a.click();
+        }
+
+        // ---------------- GOOGLE FORM SUBMISSION ----------------
+        function submitForm() {
+            const name = document.getElementById("name").value || "Anonymous";
+            const data = JSON.stringify(rounds.map((round, r) => ({ round: r + 1, matchups: round })));
+            document.getElementById("bracketData").value = data;
+
+            const formURL = "https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse";
+
+            const formData = new FormData();
+            formData.append("entry.674437929", name);
+            formData.append("entry.1121614126", data);
+
+            fetch(formURL, { method: "POST", mode: "no-cors", body: formData })
+                .then(() => alert("Bracket submitted!"))
+                .catch(() => alert("Submission failed!"));
+        }
+
+        // ---------------- LIVE LEADERBOARD ----------------
+        const officialBracketURL = 'official_bracket.json'; // hosted official bracket JSON
+        const userBracketsURL = 'https://sheetdb.io/api/v1/zdvrwyp85u49u'; // replace with your SheetDB URL
+
+        async function updateLeaderboard() {
+            try {
+                const [officialRes, usersRes] = await Promise.all([
+                    fetch(officialBracketURL),
+                    fetch(userBracketsURL)
+                ]);
+
+                const official = await officialRes.json();
+                const rawUsers = await usersRes.json();
+
+                // Map the raw SheetDB data to a usable format
+                const users = rawUsers.map(u => {
+                    let userRounds = [];
+                    try {
+                        // Use bracket notation ["Bracket Data"] because of the space in the column name
+                        userRounds = JSON.parse(u["Bracket Data"] || "[]");
+                    } catch (e) {
+                        console.error("Error parsing bracket for user:", u.Name, e);
+                    }
+
+                    return {
+                        name: u.Name || "Anonymous",
+                        rounds: userRounds
+                    };
+                });
+
+                const scores = calculateScores(users, official);
+
+                const tbody = document.querySelector("#leaderboard tbody");
+                tbody.innerHTML = "";
+
+                scores.forEach((user, i) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td>${user.name}</td>
+                <td>${user.score}</td>
+                <td>${user.roundsCorrect}</td>
+            `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Leaderboard error:", err);
+            }
+        }
+
+        function calculateScores(users, official) {
+            const scores = [];
+
+            // Cleans strings so "1 The Matrix" matches "the matrix"
+            function normalize(str) {
+                if (!str) return "";
+                return str.toString()
+                    .toLowerCase()
+                    .replace(/^\d+\s*/, "") // Remove leading numbers/seeds
+                    .replace(/[^a-z0-9]/g, "") // Remove special characters and spaces
+                    .trim();
+            }
+
+            users.forEach(user => {
+                let score = 0;
+                let roundsCorrect = 0;
+
+                official.forEach((round, rIndex) => {
+                    if (!user.rounds || !user.rounds[rIndex]) return;
+
+                    // Scoring logic: Round 1 = 1pt, Round 2 = 2pts, Round 3 = 4pts...
+                    const roundPoints = Math.pow(2, rIndex);
+
+                    round.matchups.forEach((match, mIndex) => {
+                        // 1. Get Official Winner
+                        // Handles: [ [{name: "X"}] ] OR [ {name: "X"} ]
+                        const offMatch = Array.isArray(match) ? match[0] : match;
+                        const officialWinner = Array.isArray(offMatch) ? offMatch[0]?.name : offMatch?.name;
+
+                        // 2. Get User Pick
+                        const userMatch = user.rounds[rIndex]?.matchups?.[mIndex];
+                        const userPick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
+
+                        // 3. Compare
+                        if (officialWinner && userPick) {
+                            if (normalize(userPick) === normalize(officialWinner)) {
+                                score += roundPoints;
+                                roundsCorrect++;
+                            }
+                        }
+                    });
+                });
+
+                scores.push({ name: user.name, score, roundsCorrect });
+            });
+
+            // Sort: Highest score at the top
+            return scores.sort((a, b) => b.score - a.score);
+        }
+        // ---------------- INITIAL RENDER ----------------
+        renderBracket();
+        updateLeaderboard();
+        setInterval(updateLeaderboard, 30000); // refresh every 30s
+
+    </script>
+</body>
+
+</html>
