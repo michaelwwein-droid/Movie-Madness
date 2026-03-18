@@ -236,95 +236,102 @@
 const officialBracketURL = 'official_bracket.json'; 
     const userBracketsURL = 'https://sheetdb.io/api/v1/zdvrwyp85u49u'; 
 
-    async function updateLeaderboard() {
-        try {
-            const usersRes = await fetch(userBracketsURL);
-            const rawUsers = await usersRes.json();
+   async function updateLeaderboard() {
+    try {
+        const [officialRes, usersRes] = await Promise.all([
+            fetch(officialBracketURL),
+            fetch(userBracketsURL)
+        ]);
 
-            // Try to get official results, but don't crash if they aren't there yet
-            let official = [];
+        const official = await officialRes.json();
+        const rawUsers = await usersRes.json();
+
+        // Map the raw SheetDB data to a usable format
+        const users = rawUsers.map(u => {
+            let userRounds = [];
             try {
-                const officialRes = await fetch(officialBracketURL);
-                if (officialRes.ok) {
-                    official = await officialRes.json();
-                }
+                // Use bracket notation ["Bracket Data"] because of the space in the column name
+                userRounds = JSON.parse(u["Bracket Data"] || "[]");
             } catch (e) {
-                console.log("Official bracket not found yet - showing 0 scores.");
+                console.error("Error parsing bracket for user:", u.Name, e);
             }
 
-            const users = rawUsers.map(u => {
-                let userRounds = [];
-                try {
-                    // This matches the "Bracket Data" column in your Google Sheet
-                    userRounds = JSON.parse(u["Bracket Data"] || "[]");
-                } catch (e) {
-                    console.error("Error parsing bracket for user:", u.Name);
-                }
-                return { name: u.Name || "Anonymous", rounds: userRounds };
-            });
+            return {
+                name: u.Name || "Anonymous",
+                rounds: userRounds
+            };
+        });
 
-            const scores = calculateScores(users, official);
-            const tbody = document.getElementById("leaderboard-body");
-            tbody.innerHTML = "";
+        const scores = calculateScores(users, official);
 
-            if (scores.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='4'>Waiting for first entry...</td></tr>";
-                return;
-            }
+        const tbody = document.querySelector("#leaderboard tbody");
+        tbody.innerHTML = "";
 
-            scores.forEach((user, i) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td>${user.name}</td>
-                    <td>${user.score}</td>
-                    <td>${user.roundsCorrect}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+        scores.forEach((user, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td>${user.name}</td>
+                <td>${user.score}</td>
+                <td>${user.roundsCorrect}</td>
+            `;
+            tbody.appendChild(tr);
+        });
 
-        } catch (err) {
-            console.error("Leaderboard error:", err);
-        }
+    } catch (err) {
+        console.error("Leaderboard error:", err);
+    }
+}
+
+function calculateScores(users, official) {
+    const scores = [];
+
+    // Cleans strings so "1 The Matrix" matches "the matrix"
+    function normalize(str) {
+        if (!str) return "";
+        return str.toString()
+            .toLowerCase()
+            .replace(/^\d+\s*/, "") // Remove leading numbers/seeds
+            .replace(/[^a-z0-9]/g, "") // Remove special characters and spaces
+            .trim();
     }
 
-    function calculateScores(users, official) {
-        if (!official || official.length === 0) {
-            return users.map(u => ({ name: u.name, score: 0, roundsCorrect: 0 }));
-        }
+    users.forEach(user => {
+        let score = 0;
+        let roundsCorrect = 0;
 
-        const scores = [];
-        function normalize(str) {
-            if (!str) return "";
-            return str.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim();
-        }
+        official.forEach((round, rIndex) => {
+            if (!user.rounds || !user.rounds[rIndex]) return;
 
-        users.forEach(user => {
-            let score = 0;
-            let roundsCorrect = 0;
+            // Scoring logic: Round 1 = 1pt, Round 2 = 2pts, Round 3 = 4pts...
+            const roundPoints = Math.pow(2, rIndex); 
 
-            official.forEach((round, rIndex) => {
-                if (!user.rounds || !user.rounds[rIndex]) return;
-                const roundPoints = Math.pow(2, rIndex);
+            round.matchups.forEach((match, mIndex) => {
+                // 1. Get Official Winner
+                // Handles: [ [{name: "X"}] ] OR [ {name: "X"} ]
+                const offMatch = Array.isArray(match) ? match[0] : match;
+                const officialWinner = Array.isArray(offMatch) ? offMatch[0]?.name : offMatch?.name;
 
-                round.matchups.forEach((match, mIndex) => {
-                    const offMatch = Array.isArray(match) ? match[0] : match;
-                    const officialWinner = offMatch?.name;
+                // 2. Get User Pick
+                const userMatch = user.rounds[rIndex]?.matchups?.[mIndex];
+                const userPick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
 
-                    const userMatch = user.rounds[rIndex]?.matchups?.[mIndex];
-                    const userPick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
-
-                    if (officialWinner && userPick && normalize(userPick) === normalize(officialWinner)) {
+                // 3. Compare
+                if (officialWinner && userPick) {
+                    if (normalize(userPick) === normalize(officialWinner)) {
                         score += roundPoints;
                         roundsCorrect++;
                     }
-                });
+                }
             });
-            scores.push({ name: user.name, score, roundsCorrect });
         });
-        return scores.sort((a, b) => b.score - a.score);
-    }
 
+        scores.push({ name: user.name, score, roundsCorrect });
+    });
+
+    // Sort: Highest score at the top
+    return scores.sort((a, b) => b.score - a.score);
+}
     // Start everything
     renderBracket();
     updateLeaderboard();
