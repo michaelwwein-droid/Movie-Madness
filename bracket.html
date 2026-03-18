@@ -47,37 +47,11 @@
     </table>
 
 <script>
-// 1. CONFIG
-const csvUrl = https: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
+// --- CONFIG ---
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
 const officialBracketURL = 'official_bracket.json';
 
-// 2. SCORING ENGINE
-function calculateScores(users, official) {
-    const results = [];
-    const norm = (s) => s ? s.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
-    
-    users.forEach(u => {
-        let s = 0, c = 0;
-        if (official && Array.isArray(official) && official.length > 0) {
-            official.forEach((round, rIdx) => {
-                const pts = Math.pow(2, rIdx);
-                if (u.rounds && u.rounds[rIdx]) {
-                    const officialMatchups = round.matchups || [];
-                    officialMatchups.forEach((m, mIdx) => {
-                        const win = m?.name;
-                        const userMatch = u.rounds[rIdx][mIdx];
-                        const pick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
-                        if (win && pick && norm(pick) === norm(win)) { s += pts; c++; }
-                    });
-                }
-            });
-        }
-        results.push({ name: u.name, score: s, roundsCorrect: c });
-    });
-    return results.sort((a, b) => b.score - a.score);
-}
-
-// 3. MOVIE DATA
+// --- MOVIE DATA ---
 const initialMovies = [
     { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
     { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
@@ -118,9 +92,10 @@ for (let i = 0; i < initialMovies.length; i += 2) {
     rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
 }
 
-// 4. UI FUNCTIONS
+// --- CORE FUNCTIONS ---
 function renderBracket() {
     const bracketDiv = document.getElementById("bracket");
+    if(!bracketDiv) return;
     bracketDiv.innerHTML = "";
     rounds.forEach((round, i) => {
         const roundDiv = document.createElement("div");
@@ -166,52 +141,57 @@ function submitForm() {
     formData.append("entry.674437929", name);
     formData.append("entry.1121614126", data);
     fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
-    .then(() => alert("Submitted! Check leaderboard in 30 seconds."))
+    .then(() => alert("Submitted! Check leaderboard in 30s."))
     .catch(() => alert("Error submitting."));
 }
 
-// 5. LEADERBOARD UPDATER
+function calculateScores(users, official) {
+    const results = [];
+    const norm = (s) => s ? s.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
+    users.forEach(u => {
+        let s = 0, c = 0;
+        if (official && official.length > 0) {
+            official.forEach((round, rIdx) => {
+                const pts = Math.pow(2, rIdx);
+                if (u.rounds && u.rounds[rIdx]) {
+                    const offM = round.matchups || [];
+                    offM.forEach((m, mIdx) => {
+                        const win = m?.name;
+                        const userMatch = u.rounds[rIdx][mIdx];
+                        const pick = Array.isArray(userMatch) ? userMatch[0]?.name : userMatch?.name;
+                        if (win && pick && norm(pick) === norm(win)) { s += pts; c++; }
+                    });
+                }
+            });
+        }
+        results.push({ name: u.name, score: s, roundsCorrect: c });
+    });
+    return results.sort((a, b) => b.score - a.score);
+}
+
 async function updateLeaderboard() {
     const tbody = document.getElementById("leaderboard-body");
     try {
-        // 1. Try a different proxy (CorsProxy.io)
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}&t=${Date.now()}`;
-        const response = await fetch(proxyUrl);
-        const csvText = await response.text();
-
-        // LOGGING: This helps us see what the computer sees
-        console.log("Full CSV Content:", csvText);
-
-        if (!csvText || csvText.length < 10) {
-            tbody.innerHTML = "<tr><td colspan='4'>Error: Google returned an empty file. Try Re-Publishing.</td></tr>";
-            return;
-        }
+        const proxy = 'https://api.allorigins.win/get?url=';
+        const response = await fetch(proxy + encodeURIComponent(csvUrl) + '&t=' + Date.now());
+        const json = await response.json();
+        const csvText = json.contents;
+        
+        if (!csvText) return;
 
         const rows = csvText.split(/\r?\n/).filter(r => r.trim() !== "");
         const users = [];
 
-        // If we only have the header row (length 1), it's "empty"
-        if (rows.length <= 1) {
-            tbody.innerHTML = `<tr><td colspan='4'>Headers found, but no player data yet. (Rows: ${rows.length})</td></tr>`;
-            return;
-        }
-
         for (let i = 1; i < rows.length; i++) {
             const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length < 3) continue;
-
             let rawName = cols[2].replace(/^"|"$/g, '').trim();
             let rawBracket = cols[3] || "";
             let bData = [];
-
             try {
-                let cleanJson = rawBracket.trim();
-                if (cleanJson.startsWith('"')) cleanJson = cleanJson.substring(1);
-                if (cleanJson.endsWith('"')) cleanJson = cleanJson.slice(0, -1);
-                cleanJson = cleanJson.replace(/""/g, '"');
+                let cleanJson = rawBracket.trim().replace(/^"/, '').replace(/"$/, '').replace(/""/g, '"');
                 bData = JSON.parse(cleanJson);
             } catch(e) {}
-
             if (rawName && rawName.toLowerCase() !== "name") {
                 users.push({ name: rawName, rounds: bData });
             }
@@ -225,9 +205,8 @@ async function updateLeaderboard() {
 
         const scores = calculateScores(users, official);
         tbody.innerHTML = "";
-        
         if (users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan='4'>Parsed 0 users. Check if column 3 (Name) is empty.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan='4'>No entries found. (Rows in sheet: ${rows.length - 1})</td></tr>`;
         } else {
             scores.forEach((u, i) => {
                 const tr = document.createElement("tr");
@@ -235,12 +214,10 @@ async function updateLeaderboard() {
                 tbody.appendChild(tr);
             });
         }
-    } catch (err) { 
-        tbody.innerHTML = "<tr><td colspan='4'>Connection Error: " + err.message + "</td></tr>";
-    }
+    } catch (err) { console.error(err); }
 }
 
-// 6. INIT
+// --- START ---
 renderBracket();
 updateLeaderboard();
 setInterval(updateLeaderboard, 30000);
