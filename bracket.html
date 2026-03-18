@@ -3,122 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dead Movie Society | Movie Madness</title>
+    <title>Movie Madness Leaderboard</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: #121212;
-            color: #eeeeee;
-            margin: 0;
-            padding: 20px;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #eee; padding: 20px; margin: 0; }
+        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; }
+        
+        /* Bracket Styling */
+        .bracket-outer { display: flex; padding: 40px; overflow-x: auto; min-height: 400px; }
+        .round { display: flex; flex-direction: column; width: 250px; margin-right: 50px; flex-shrink: 0; }
+        .matchup { display: flex; flex-direction: column; justify-content: center; min-height: 100px; margin: 10px 0; }
+        
+        /* Spacing for rounds */
+        .round:nth-child(2) .matchup { min-height: 200px; }
+        .round:nth-child(3) .matchup { min-height: 400px; }
+        .round:nth-child(4) .matchup { min-height: 800px; }
 
-        h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; }
+        button { background: #2a2a2a; color: white; border: 1px solid #444; padding: 10px; margin: 2px 0; cursor: pointer; border-radius: 4px; text-align: left; width: 100%; }
+        button:hover { border-color: #ffcc00; }
+        .seed { color: #ffcc00; font-weight: bold; margin-right: 8px; }
 
-        /* --- THE BRACKET LAYOUT --- */
-        .bracket-outer {
-            display: flex;
-            align-items: flex-start;
-            padding: 40px;
-            overflow-x: auto;
-        }
+        .controls { text-align: center; margin: 40px auto; background: #1a1a1a; padding: 20px; border-radius: 10px; max-width: 500px; border: 1px solid #333; }
+        input { padding: 10px; width: 80%; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px; border-radius: 4px; }
+        .btn-submit { background: #ffcc00; color: black; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
 
-        .round {
-            display: flex;
-            flex-direction: column;
-            width: 280px; 
-            margin-right: 80px;
-            flex-shrink: 0;
-        }
-
-        .round h3 {
-            text-align: center;
-            color: #ffcc00;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-        }
-
-        .matchup {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-height: 120px; 
-        }
-
-        /* Vertical Spacing Logic */
-        .round:nth-child(2) .matchup { min-height: 240px; }
-        .round:nth-child(3) .matchup { min-height: 480px; }
-        .round:nth-child(4) .matchup { min-height: 960px; }
-        .round:nth-child(5) .matchup { min-height: 1920px; }
-        .round:nth-child(6) .matchup { min-height: 3840px; }
-
-        .matchup button {
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #444;
-            padding: 12px;
-            margin: 2px 0;
-            cursor: pointer;
-            border-radius: 4px;
-            width: 100%;
-            text-align: left;
-            font-size: 0.85rem;
-            transition: 0.2s;
-            white-space: normal;
-        }
-
-        .matchup button:hover {
-            border-color: #ffcc00;
-            background: #333;
-        }
-
-        .seed {
-            color: #ffcc00;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        /* --- CONTROLS & UI --- */
-        .controls {
-            text-align: center;
-            margin: 50px auto;
-            background: #1a1a1a;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 600px;
-            border: 1px solid #333;
-        }
-
-        .champion-box {
-            font-size: 2rem;
-            color: #ffcc00;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            padding: 12px;
-            width: 70%;
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-
-        .btn-submit {
-            background: #ffcc00;
-            color: black;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        table { width: 100%; max-width: 800px; margin: 40px auto; border-collapse: collapse; background: #1a1a1a; }
+        table { width: 100%; max-width: 800px; margin: 20px auto; border-collapse: collapse; background: #1a1a1a; }
         th, td { padding: 12px; border: 1px solid #333; text-align: center; }
         th { background: #333; color: #ffcc00; }
     </style>
@@ -126,12 +34,12 @@
 <body>
 
     <h1>🎬 Movie Madness</h1>
-
+    
     <div class="bracket-outer" id="bracket"></div>
 
     <div class="controls">
-        <div id="champion" class="champion-box">Predict Your Winner</div>
-        <input type="text" id="name" placeholder="Bracket Name">
+        <div id="champion" style="font-size:1.5rem; color:#ffcc00; margin-bottom:15px;">Pick Your Winner</div>
+        <input type="text" id="name" placeholder="Enter Your Name">
         <br>
         <button class="btn-submit" onclick="submitForm()">Submit Bracket</button>
     </div>
@@ -146,7 +54,6 @@
     </table>
 
 <script>
-    // --- CONFIG ---
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg1nKqcsoXSWAjnhLTXkBOw9p9hdqYn_fEbVnFQBb7Cqa6LetUvdfLdnoNAXYLDkEMjps_GtPAKDWG/pub?gid=324817627&single=true&output=csv';
     const officialBracketURL = 'official_bracket.json';
 
@@ -185,13 +92,14 @@
         { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
     ];
 
-  let rounds = [[]];
+    let rounds = [[]];
     for (let i = 0; i < initialMovies.length; i += 2) {
         rounds[0].push([initialMovies[i], initialMovies[i + 1]]);
     }
 
     function renderBracket() {
         const bracketDiv = document.getElementById("bracket");
+        if (!bracketDiv) return;
         bracketDiv.innerHTML = "";
         rounds.forEach((round, i) => {
             const roundDiv = document.createElement("div");
@@ -203,11 +111,11 @@
                 matchup.forEach((movie, k) => {
                     const btn = document.createElement("button");
                     if (movie) {
-                        btn.innerHTML = `<span>${movie.seed}</span> ${movie.name}`;
+                        btn.innerHTML = `<span class="seed">${movie.seed}</span> ${movie.name}`;
                         btn.onclick = () => selectWinner(i, j, k);
                     } else {
-                        btn.innerHTML = `<span>?</span> TBD`;
-                        btn.style.opacity = "0.3";
+                        btn.innerHTML = `<span class="seed">?</span> TBD`;
+                        btn.style.opacity = "0.4";
                     }
                     matchDiv.appendChild(btn);
                 });
@@ -237,83 +145,69 @@
         formData.append("entry.674437929", name);
         formData.append("entry.1121614126", data);
         fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
-        .then(() => alert("Bracket Submitted!"))
+        .then(() => alert("Submitted! Check leaderboard in 30 seconds."))
         .catch(() => alert("Error submitting."));
     }
 
-    // --- LEADERBOARD LOGIC ---
     async function updateLeaderboard() {
-    const tbody = document.getElementById("leaderboard-body");
-    try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
-        const response = await fetch(proxyUrl);
-        const json = await response.json();
-        const csvText = json.contents;
-
-        if (!csvText) {
-            tbody.innerHTML = "<tr><td colspan='4'>Google Sheet is empty or not published.</td></tr>";
-            return;
-        }
-
-        const rows = csvText.split('\n').map(row => row.trim()).filter(row => row !== "");
-        const users = [];
-
-        for (let i = 1; i < rows.length; i++) {
-            const columns = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-            
-            let name = "Anonymous";
-            let bracketData = [];
-
-            // LOOP THROUGH EVERY COLUMN TO FIND THE DATA
-            columns.forEach((col, index) => {
-                let cleanCol = col.replace(/"/g, "").trim();
-                
-                // 1. If it looks like JSON bracket data, grab it
-                if (cleanCol.startsWith("[[[") || cleanCol.includes('{"seed"')) {
-                    try {
-                        let jsonStr = col.replace(/^"|"$/g, '').replace(/""/g, '"');
-                        bracketData = JSON.parse(jsonStr);
-                    } catch(e) {}
-                } 
-                // 2. If it's the 3rd column (index 2), that's usually our Name
-                else if (index === 2 && cleanCol !== "") {
-                    name = cleanCol;
-                }
-                // 3. Fallback: if name is still anonymous and this col has text (and isn't email/date)
-                else if (name === "Anonymous" && cleanCol.length > 2 && !cleanCol.includes("@") && !cleanCol.includes("/")) {
-                    name = cleanCol;
-                }
-            });
-
-            if (name !== "Name" && name !== "") {
-                users.push({ name, rounds: bracketData });
-            }
-        }
-
-        let official = [];
+        const tbody = document.getElementById("leaderboard-body");
         try {
-            const offRes = await fetch(officialBracketURL);
-            if (offRes.ok) official = await offRes.json();
-        } catch (e) {}
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(csvUrl)}`;
+            const response = await fetch(proxyUrl);
+            const json = await response.json();
+            const csvText = json.contents;
+            const rows = csvText.split('\n').map(r => r.trim()).filter(r => r !== "");
+            
+            const users = [];
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                // Name (Col 3 / Index 2) | Bracket (Col 4 / Index 3)
+                let name = (cols[2] || "Anonymous").replace(/"/g, "").trim();
+                let rawB = cols[3] || "[]";
+                let bData = [];
+                try {
+                    bData = JSON.parse(rawB.replace(/^"|"$/g, '').replace(/""/g, '"'));
+                } catch(e) {}
+                if (name !== "Name") users.push({ name, rounds: bData });
+            }
 
-        const scores = calculateScores(users, official);
-        tbody.innerHTML = ""; 
+            let official = [];
+            try {
+                const offRes = await fetch(officialBracketURL);
+                if (offRes.ok) official = await offRes.json();
+            } catch(e) {}
 
-        if (scores.length === 0) {
-            // This is the safety net: let's see what the RAW first row looks like
-            tbody.innerHTML = `<tr><td colspan='4'>DEBUG: Found ${rows.length} rows, but no names. First row columns: ${rows[1].substring(0,50)}...</td></tr>`;
-        } else {
-            scores.forEach((user, i) => {
+            const scores = calculateScores(users, official);
+            tbody.innerHTML = "";
+            scores.forEach((u, i) => {
                 const tr = document.createElement("tr");
-                tr.innerHTML = `<td>${i + 1}</td><td>${user.name}</td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
+                tr.innerHTML = `<td>${i+1}</td><td>${u.name}</td><td>${u.score}</td><td>${u.roundsCorrect}</td>`;
                 tbody.appendChild(tr);
             });
-        }
-    } catch (err) {
-        tbody.innerHTML = "<tr><td colspan='4'>Critical Error: " + err.message + "</td></tr>";
+        } catch (err) { console.error(err); }
     }
-}
 
+    function calculateScores(users, official) {
+        const results = [];
+        const norm = (s) => s ? s.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim() : "";
+        users.forEach(u => {
+            let s = 0, c = 0;
+            if (official && official.length > 0) {
+                official.forEach((round, rIdx) => {
+                    const pts = Math.pow(2, rIdx);
+                    round.matchups.forEach((m, mIdx) => {
+                        const win = m?.name;
+                        const pick = u.rounds?.[rIdx]?.[mIdx]?.name || u.rounds?.[rIdx]?.[mIdx]?.[0]?.name;
+                        if (win && pick && norm(pick) === norm(win)) { s += pts; c++; }
+                    });
+                });
+            }
+            results.push({ name: u.name, score: s, roundsCorrect: c });
+        });
+        return results.sort((a,b) => b.score - a.score);
+    }
+
+    // Initialize
     renderBracket();
     updateLeaderboard();
     setInterval(updateLeaderboard, 30000);
