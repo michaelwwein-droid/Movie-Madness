@@ -5,56 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dead Movie Society | Movie Madness</title>
     <style>
-        /* --- THEME COLORS --- */
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #121212; /* Deep Black */
-            color: #eeeeee;
+            background: #121212;
+            color: #eee;
             margin: 0;
             padding: 20px;
         }
 
         h1 { text-align: center; color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; }
-        h2 { text-align: center; color: #ffcc00; }
 
-        /* --- THE BRACKET (No Lines) --- */
+        /* --- THE LAYOUT --- */
         .bracket-outer {
             display: flex;
-            gap: 30px;
-            padding: 20px;
-            overflow-x: auto;
             align-items: flex-start;
+            padding: 40px;
+            overflow-x: auto;
         }
 
         .round {
             display: flex;
             flex-direction: column;
-            justify-content: space-around;
-            min-width: 220px;
+            width: 240px;
+            margin-right: 60px; /* Space between rounds */
             flex-shrink: 0;
         }
 
         .round h3 {
             text-align: center;
-            color: #666;
-            font-size: 0.8rem;
+            color: #ffcc00;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
             text-transform: uppercase;
         }
 
         .matchup {
             display: flex;
             flex-direction: column;
-            margin: 15px 0;
-            background: #1a1a1a; /* Darker grey for the match box */
-            padding: 5px;
-            border-radius: 8px;
-            border: 1px solid #333;
+            justify-content: center;
+            /* Matchup heights double each round to keep everything aligned */
+            min-height: 100px; 
         }
 
-        /* --- BUTTONS & SEEDS --- */
+        .round:nth-child(2) .matchup { min-height: 200px; }
+        .round:nth-child(3) .matchup { min-height: 400px; }
+        .round:nth-child(4) .matchup { min-height: 800px; }
+        .round:nth-child(5) .matchup { min-height: 1600px; }
+        .round:nth-child(6) .matchup { min-height: 3200px; }
+
+        /* --- BUTTONS --- */
         .matchup button {
-            display: flex;
-            align-items: center;
             background: #2a2a2a;
             color: white;
             border: 1px solid #444;
@@ -62,7 +62,7 @@
             margin: 2px 0;
             cursor: pointer;
             border-radius: 4px;
-            font-size: 0.85rem;
+            width: 100%;
             text-align: left;
             transition: 0.2s;
         }
@@ -76,46 +76,44 @@
             color: #ffcc00;
             font-weight: bold;
             margin-right: 10px;
-            width: 20px;
-            text-align: center;
         }
 
-        /* --- CONTROLS --- */
+        /* --- UI CONTROLS --- */
         .controls {
             text-align: center;
+            margin: 50px auto;
             background: #1a1a1a;
             padding: 30px;
-            max-width: 600px;
-            margin: 40px auto;
             border-radius: 12px;
+            max-width: 600px;
             border: 1px solid #333;
         }
 
-        #champion { 
-            font-size: 2rem; 
-            color: #ffcc00; 
-            font-weight: bold; 
-            margin: 20px 0; 
+        .champion-box {
+            font-size: 2.2rem;
+            color: #ffcc00;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
-        
-        input { 
-            padding: 12px; 
-            width: 60%; 
-            margin-bottom: 15px; 
-            background: #222; 
-            border: 1px solid #444; 
-            color: white; 
+
+        input[type="text"] {
+            padding: 12px;
+            width: 70%;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
             border-radius: 4px;
+            margin-bottom: 15px;
         }
-        
-        .submit-btn { 
-            background: #ffcc00; 
-            color: black; 
-            padding: 12px 25px; 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border-radius: 4px; 
+
+        .btn-submit {
+            background: #ffcc00;
+            color: black;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
             text-transform: uppercase;
         }
 
@@ -132,11 +130,10 @@
     <div class="bracket-outer" id="bracket"></div>
 
     <div class="controls">
-        <h2>🏆 WINNER</h2>
-        <div id="champion">Select Your Winner</div>
+        <div id="champion" class="champion-box">Predict Your Winner</div>
         <input type="text" id="name" placeholder="Bracket Name">
         <br>
-        <button class="submit-btn" onclick="submitForm()">Submit Bracket</button>
+        <button class="btn-submit" onclick="submitForm()">Submit Bracket</button>
     </div>
 
     <table>
@@ -234,7 +231,7 @@
         formData.append("entry.674437929", name);
         formData.append("entry.1121614126", data);
         fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", { method: "POST", mode: "no-cors", body: formData })
-        .then(() => alert("Submitted!"))
+        .then(() => alert("Bracket Submitted!"))
         .catch(() => alert("Error submitting."));
     }
 
