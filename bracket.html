@@ -252,35 +252,37 @@
         }
 
         // ---------------- RENDER ----------------
-        function renderBracket() {
-            const bracketDiv = document.getElementById("bracket");
-            bracketDiv.innerHTML = "";
+     function renderBracket() {
+    const bracketDiv = document.getElementById("bracket");
+    bracketDiv.innerHTML = "";
 
-            rounds.forEach((round, i) => {
-                const roundDiv = document.createElement("div");
-                roundDiv.className = "round";
-                roundDiv.innerHTML = `<h3>Round ${i + 1}</h3>`;
+    rounds.forEach((round, i) => {
+        const roundDiv = document.createElement("div");
+        roundDiv.className = "round";
+        roundDiv.innerHTML = `<h3>Round ${i + 1}</h3>`;
 
-                round.forEach((matchup, j) => {
-                    const matchDiv = document.createElement("div");
-                    matchDiv.className = "matchup";
+        round.forEach((matchup, j) => {
+            const matchDiv = document.createElement("div");
+            matchDiv.className = "matchup";
 
-                    matchup.forEach((movie, k) => {
-                        if (movie) {
-                            const btn = document.createElement("button");
-                            btn.innerHTML = `<span class="seed">(${movie.seed})</span>${movie.name}`;
-                            btn.onclick = () => selectWinner(i, j, k);
-                            matchDiv.appendChild(btn);
-                        }
-                    });
-
-                    roundDiv.appendChild(matchDiv);
-                });
-
-                bracketDiv.appendChild(roundDiv);
+            matchup.forEach((movie, k) => {
+                const btn = document.createElement("button");
+                if (movie) {
+                    btn.innerHTML = `<span class="seed">${movie.seed}</span> ${movie.name}`;
+                    btn.onclick = () => selectWinner(i, j, k);
+                } else {
+                    btn.innerHTML = `<span class="seed">?</span> <i>TBD</i>`;
+                    btn.style.opacity = "0.5";
+                }
+                matchDiv.appendChild(btn);
             });
-        }
 
+            roundDiv.appendChild(matchDiv);
+        });
+
+        bracketDiv.appendChild(roundDiv);
+    });
+}
         // ---------------- SELECT WINNER ----------------
         function selectWinner(roundIndex, matchIndex, choiceIndex) {
             const winner = rounds[roundIndex][matchIndex][choiceIndex];
@@ -292,7 +294,10 @@
 
             const slot = matchIndex % 2;
             rounds[roundIndex + 1][nextPos][slot] = winner;
-
+<div class="champion-area">
+    <h2>🏆 THE WINNER'S CIRCLE 🏆</h2>
+    <div id="champion">Selection in progress...</div>
+</div>
             renderBracket();
 
             const lastRound = rounds[rounds.length - 1];
@@ -315,7 +320,6 @@
             a.href = url;
             a.download = "my_movie_bracket.json";
             a.click();
-        }
 
         // ---------------- GOOGLE FORM SUBMISSION ----------------
         function submitForm() {
