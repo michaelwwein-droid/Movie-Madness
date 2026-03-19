@@ -1,345 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Madness | Live Bracket</title>
+    <title>Movie Madness | Live</title>
     <style>
-        :root {
-            --primary: #ffcc00;
-            --bg: #121212;
-            --card: #1a1a1a;
-            --text: #eeeeee;
-        }
+        :root { --primary: #ffcc00; --bg: #121212; --card: #1a1a1a; --text: #eeeeee; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
+        h1 { text-align: center; color: var(--primary); text-transform: uppercase; }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            padding: 20px;
-            margin: 0;
-        }
+        /* Bracket Layout */
+        .bracket-outer { display: flex; overflow-x: auto; gap: 30px; padding: 40px; background: var(--card); border-radius: 12px; border: 1px solid #333; margin-bottom: 30px; min-height: 400px; }
+        .round { min-width: 220px; display: flex; flex-direction: column; }
+        .matchup { margin: 15px 0; display: flex; flex-direction: column; justify-content: center; min-height: 100px; border-left: 2px solid #333; padding-left: 10px; }
+        
+        button { background: #2a2a2a; color: white; border: 1px solid #444; padding: 10px; margin: 2px 0; cursor: pointer; border-radius: 6px; text-align: left; }
+        button:hover { border-color: var(--primary); background: #333; }
+        .seed { color: var(--primary); font-weight: bold; margin-right: 8px; font-size: 0.8rem; }
 
-        h1 {
-            text-align: center;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        /* Submission Form */
+        .controls { text-align: center; margin: 40px auto; background: var(--card); padding: 30px; border-radius: 12px; max-width: 500px; border: 1px solid #333; }
+        input { padding: 12px; width: 80%; background: #222; border: 1px solid #444; color: white; margin-bottom: 15px; border-radius: 6px; }
+        .btn-submit { background: var(--primary); color: black; padding: 12px 30px; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; width: 100%; }
 
-        /* Bracket Styles */
-        .bracket-outer {
-            display: flex;
-            overflow-x: auto;
-            gap: 30px;
-            padding: 40px;
-            background: var(--card);
-            border-radius: 12px;
-            border: 1px solid #333;
-            margin-bottom: 30px;
-        }
-
-        .round {
-            min-width: 220px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .round-title {
-            text-align: center;
-            color: var(--primary);
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-
-        .matchup {
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-height: 100px;
-        }
-
-        /* Dynamic Matchup Spacing */
-        .round:nth-child(2) .matchup {
-            min-height: 200px;
-        }
-
-        .round:nth-child(3) .matchup {
-            min-height: 400px;
-        }
-
-        .round:nth-child(4) .matchup {
-            min-height: 800px;
-        }
-
-        button {
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #444;
-            padding: 10px;
-            margin: 2px 0;
-            cursor: pointer;
-            border-radius: 6px;
-            text-align: left;
-            transition: 0.2s;
-        }
-
-        button:hover {
-            border-color: var(--primary);
-            background: #333;
-        }
-
-        .seed {
-            color: var(--primary);
-            font-weight: bold;
-            margin-right: 8px;
-            font-size: 0.8rem;
-        }
-
-        /* Controls */
-        .controls {
-            text-align: center;
-            margin: 40px auto;
-            background: var(--card);
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 550px;
-            border: 1px solid #333;
-        }
-
-        input {
-            padding: 12px;
-            width: 80%;
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-
-        .btn-submit {
-            background: var(--primary);
-            color: black;
-            padding: 12px 30px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 6px;
-            width: 100%;
-            text-transform: uppercase;
-        }
-
-        .btn-submit:hover {
-            background: #e6b800;
-        }
-
-        /* Leaderboard Table */
-        table {
-            width: 100%;
-            max-width: 800px;
-            margin: 30px auto;
-            border-collapse: collapse;
-            background: var(--card);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-        }
-
-        th,
-        td {
-            padding: 15px;
-            border: 1px solid #333;
-            text-align: center;
-        }
-
-        th {
-            background: #222;
-            color: var(--primary);
-            text-transform: uppercase;
-            font-size: 0.9rem;
-        }
-
-        tr:nth-child(even) {
-            background: #1e1e1e;
-        }
-
-        .status {
-            text-align: center;
-            color: #888;
-            font-size: 0.8rem;
-            margin-top: 10px;
-        }
+        /* Leaderboard */
+        table { width: 100%; max-width: 800px; margin: 30px auto; border-collapse: collapse; background: var(--card); }
+        th, td { padding: 15px; border: 1px solid #333; text-align: center; }
+        th { background: #222; color: var(--primary); }
+        .status { text-align: center; color: #888; font-size: 0.8rem; }
     </style>
 </head>
-
 <body>
 
     <h1>🎬 Movie Madness</h1>
-
-    <div class="bracket-outer" id="bracket-ui"></div>
+    
+    <div class="bracket-outer" id="bracket-ui">Loading Movies...</div>
 
     <div class="controls">
-        <div id="champ-display" style="font-size:1.8rem; color:var(--primary); margin-bottom:20px; font-weight: bold;">
-            Predict Your Winner</div>
-        <input type="text" id="userName" placeholder="Enter Your Name...">
-        <br>
+        <div id="champ-display" style="font-size:1.5rem; color:var(--primary); margin-bottom:15px;">Predict Your Winner</div>
+        <input type="text" id="userName" placeholder="Your Name">
         <button class="btn-submit" onclick="submitBracket()">Submit Bracket</button>
     </div>
 
     <table>
         <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Player Name</th>
-                <th>Score</th>
-            </tr>
+            <tr><th>Rank</th><th>Player Name</th><th>Score</th></tr>
         </thead>
         <tbody id="leaderboard-body">
-            <tr>
-                <td colspan="3">Connecting to Google Sheets...</td>
-            </tr>
+            <tr><td colspan="3">Syncing with Google Sheets...</td></tr>
         </tbody>
     </table>
     <div id="timestamp" class="status"></div>
 
-    <script>
-        // --- 1. CONFIGURATION ---
-        const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
+<script>
+// --- 1. YOUR LIVE API LINK ---
+const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
 
-        const initialMovies = [
-            { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
-            { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
-            { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine" },
-            { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to DC" },
-            { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
-            { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
-            { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
-            { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka" },
-            { seed: 1, name: "The Godfather" }, { seed: 16, name: "Groundhog Day" },
-            { seed: 8, name: "Dr. Strangelove" }, { seed: 9, name: "The Truman Show" },
-            { seed: 5, name: "2001: A Space Odyssey" }, { seed: 12, name: "It's a Wonderful Life" },
-            { seed: 4, name: "12 Angry Men" }, { seed: 13, name: "Best in Show" },
-            { seed: 6, name: "Grand Budapest Hotel" }, { seed: 11, name: "Full Metal Jacket" },
-            { seed: 3, name: "Back to the Future" }, { seed: 14, name: "Major League" },
-            { seed: 7, name: "Jaws" }, { seed: 10, name: "Train Dreams" },
-            { seed: 2, name: "Star Wars IV" }, { seed: 15, name: "Casablanca" },
-            { seed: 1, name: "The Dark Knight" }, { seed: 16, name: "Monty Python" },
-            { seed: 8, name: "Dead Poets Society" }, { seed: 9, name: "Coming to America" },
-            { seed: 5, name: "Ferris Bueller" }, { seed: 12, name: "League of Their Own" },
-            { seed: 4, name: "Raiders of the Lost Ark" }, { seed: 13, name: "Moonrise Kingdom" },
-            { seed: 6, name: "The Breakfast Club" }, { seed: 11, name: "Cool Hand Luke" },
-            { seed: 3, name: "Whiplash" }, { seed: 14, name: "Harry Potter 8" },
-            { seed: 7, name: "The Karate Kid" }, { seed: 10, name: "National Lampoon" },
-            { seed: 2, name: "Good Will Hunting" }, { seed: 15, name: "Spinal Tap" },
-            { seed: 1, name: "Pulp Fiction" }, { seed: 16, name: "Caddyshack" },
-            { seed: 8, name: "Ghostbusters" }, { seed: 9, name: "Avengers: Infinity War" },
-            { seed: 5, name: "La La Land" }, { seed: 12, name: "Catch Me If You Can" },
-            { seed: 4, name: "The Princess Bride" }, { seed: 13, name: "Field of Dreams" },
-            { seed: 6, name: "Inception" }, { seed: 11, name: "Rounders" },
-            { seed: 3, name: "The Usual Suspects" }, { seed: 14, name: "WarGames" },
-            { seed: 7, name: "Spider-Verse" }, { seed: 10, name: "Cuckoo's Nest" },
-            { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
-        ];
+const initialMovies = [
+    { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
+    { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
+    { seed: 5, name: "Fight Club" }, { seed: 12, name: "Eternal Sunshine" },
+    { seed: 4, name: "Interstellar" }, { seed: 13, name: "Mr. Smith Goes to DC" },
+    { seed: 6, name: "A Few Good Men" }, { seed: 11, name: "Trading Places" },
+    { seed: 3, name: "The Matrix" }, { seed: 14, name: "A Beautiful Mind" },
+    { seed: 7, name: "The Shining" }, { seed: 10, name: "Shutter Island" },
+    { seed: 2, name: "Goodfellas" }, { seed: 15, name: "Willy Wonka" },
+    { seed: 1, name: "The Godfather" }, { seed: 16, name: "Groundhog Day" },
+    { seed: 8, name: "Dr. Strangelove" }, { seed: 9, name: "The Truman Show" },
+    { seed: 5, name: "2001: A Space Odyssey" }, { seed: 12, name: "It's a Wonderful Life" },
+    { seed: 4, name: "12 Angry Men" }, { seed: 13, name: "Best in Show" },
+    { seed: 6, name: "Grand Budapest Hotel" }, { seed: 11, name: "Full Metal Jacket" },
+    { seed: 3, name: "Back to the Future" }, { seed: 14, name: "Major League" },
+    { seed: 7, name: "Jaws" }, { seed: 10, name: "Train Dreams" },
+    { seed: 2, name: "Star Wars IV" }, { seed: 15, name: "Casablanca" },
+    { seed: 1, name: "The Dark Knight" }, { seed: 16, name: "Monty Python" },
+    { seed: 8, name: "Dead Poets Society" }, { seed: 9, name: "Coming to America" },
+    { seed: 5, name: "Ferris Bueller" }, { seed: 12, name: "League of Their Own" },
+    { seed: 4, name: "Raiders of the Lost Ark" }, { seed: 13, name: "Moonrise Kingdom" },
+    { seed: 6, name: "The Breakfast Club" }, { seed: 11, name: "Cool Hand Luke" },
+    { seed: 3, name: "Whiplash" }, { seed: 14, name: "Harry Potter 8" },
+    { seed: 7, name: "The Karate Kid" }, { seed: 10, name: "National Lampoon" },
+    { seed: 2, name: "Good Will Hunting" }, { seed: 15, name: "Spinal Tap" },
+    { seed: 1, name: "Pulp Fiction" }, { seed: 16, name: "Caddyshack" },
+    { seed: 8, name: "Ghostbusters" }, { seed: 9, name: "Avengers: Infinity War" },
+    { seed: 5, name: "La La Land" }, { seed: 12, name: "Catch Me If You Can" },
+    { seed: 4, name: "The Princess Bride" }, { seed: 13, name: "Field of Dreams" },
+    { seed: 6, name: "Inception" }, { seed: 11, name: "Rounders" },
+    { seed: 3, name: "The Usual Suspects" }, { seed: 14, name: "WarGames" },
+    { seed: 7, name: "Spider-Verse" }, { seed: 10, name: "Cuckoo's Nest" },
+    { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
+];
 
-        let bracketData = [[]];
-        for (let i = 0; i < initialMovies.length; i += 2) {
-            bracketData[0].push([initialMovies[i], initialMovies[i + 1]]);
-        }
+let bracketData = [[]];
+for (let i = 0; i < initialMovies.length; i += 2) {
+    bracketData[0].push([initialMovies[i], initialMovies[i + 1]]);
+}
 
-        // --- 2. BRACKET LOGIC ---
-        function renderBracket() {
-            const container = document.getElementById("bracket-ui");
-            container.innerHTML = "";
-
-            bracketData.forEach((round, rIdx) => {
-                const roundDiv = document.createElement("div");
-                roundDiv.className = "round";
-                roundDiv.innerHTML = `<div class="round-title">Round ${rIdx + 1}</div>`;
-
-                round.forEach((match, mIdx) => {
-                    const matchupDiv = document.createElement("div");
-                    matchupDiv.className = "matchup";
-
-                    match.forEach((movie, tIdx) => {
-                        const btn = document.createElement("button");
-                        btn.innerHTML = movie ? `<span class="seed">${movie.seed}</span> ${movie.name}` : "TBD";
-                        btn.onclick = () => {
-                            if (!movie) return;
-                            if (!bracketData[rIdx + 1]) bracketData[rIdx + 1] = [];
-                            const nextMatchIdx = Math.floor(mIdx / 2);
-                            if (!bracketData[rIdx + 1][nextMatchIdx]) bracketData[rIdx + 1][nextMatchIdx] = [null, null];
-                            bracketData[rIdx + 1][nextMatchIdx][mIdx % 2] = movie;
-                            if (rIdx === 5) document.getElementById("champ-display").innerText = "🏆 " + movie.name;
-                            renderBracket();
-                        };
-                        matchupDiv.appendChild(btn);
-                    });
-                    roundDiv.appendChild(matchupDiv);
-                });
-                container.appendChild(roundDiv);
+function renderBracket() {
+    const container = document.getElementById("bracket-ui");
+    container.innerHTML = "";
+    bracketData.forEach((round, rIdx) => {
+        const roundDiv = document.createElement("div");
+        roundDiv.className = "round";
+        roundDiv.innerHTML = `<div class="round-title">Round ${rIdx + 1}</div>`;
+        round.forEach((match, mIdx) => {
+            const matchupDiv = document.createElement("div");
+            matchupDiv.className = "matchup";
+            match.forEach((movie, tIdx) => {
+                const btn = document.createElement("button");
+                btn.innerHTML = movie ? `<span class="seed">${movie.seed}</span> ${movie.name}` : "TBD";
+                btn.onclick = () => {
+                    if (!movie) return;
+                    if (!bracketData[rIdx + 1]) bracketData[rIdx + 1] = [];
+                    const nMatch = Math.floor(mIdx / 2);
+                    if (!bracketData[rIdx + 1][nMatch]) bracketData[rIdx + 1][nMatch] = [null, null];
+                    bracketData[rIdx + 1][nMatch][mIdx % 2] = movie;
+                    if (rIdx === 5) document.getElementById("champ-display").innerText = "🏆 " + movie.name;
+                    renderBracket();
+                };
+                matchupDiv.appendChild(btn);
             });
+            roundDiv.appendChild(matchupDiv);
+        });
+        container.appendChild(roundDiv);
+    });
+}
+
+// --- UPDATED FETCH FOR GITHUB ---
+async function fetchLeaderboard() {
+    const tbody = document.getElementById("leaderboard-body");
+    try {
+        // Adding a timestamp ?t= makes GitHub fetch NEW data instead of cached data
+        const response = await fetch(`${apiURL}?t=${Date.now()}`, {
+            method: "GET",
+            redirect: "follow"
+        });
+        const data = await response.json();
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='3'>Connected! Waiting for first entry...</td></tr>";
+            return;
         }
 
-        // --- 3. LEADERBOARD LOGIC ---
-        async function fetchLeaderboard() {
-            const tbody = document.getElementById("leaderboard-body");
-            try {
-                const response = await fetch(apiURL);
-                const data = await response.json();
-                tbody.innerHTML = "";
-
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='3'>No entries found yet.</td></tr>";
-                    return;
-                }
-
-                data.forEach((entry, i) => {
-                    // Searches common headers for the name
-                    const playerName = entry["Name"] || entry["name"] || entry["NAME"] || entry["Player"] || "Anonymous";
-
-                    // Skip header row if it leaked into the JSON
-                    if (playerName.toLowerCase() !== "name") {
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `<td>${i + 1}</td><td>${playerName}</td><td>0</td>`;
-                        tbody.appendChild(tr);
-                    }
-                });
-                document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
-            } catch (e) {
-                console.error("Leaderboard error:", e);
-                tbody.innerHTML = "<tr><td colspan='3'>Connection Error. Use Codepen to view.</td></tr>";
+        data.forEach((entry, i) => {
+            const values = Object.values(entry);
+            const pName = entry["Name"] || entry["name"] || values[2] || "User";
+            if (pName.toString().toLowerCase() !== "name") {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${i}</td><td>${pName}</td><td>0</td>`;
+                tbody.appendChild(tr);
             }
-        }
+        });
+        document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = "<tr><td colspan='3'>Offline Mode (Security Block)</td></tr>";
+    }
+}
 
-        // --- 4. SUBMISSION ---
-        function submitBracket() {
-            const name = document.getElementById("userName").value;
-            if (!name) return alert("Please enter a name first!");
+function submitBracket() {
+    const name = document.getElementById("userName").value;
+    if(!name) return alert("Enter your name!");
+    const formData = new FormData();
+    formData.append("entry.674437929", name);
+    formData.append("entry.1121614126", JSON.stringify(bracketData));
+    fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", {
+        method: "POST", mode: "no-cors", body: formData
+    }).then(() => {
+        alert("Submitted!");
+        setTimeout(fetchLeaderboard, 3000);
+    });
+}
 
-            const formData = new FormData();
-            formData.append("entry.674437929", name);
-            formData.append("entry.1121614126", JSON.stringify(bracketData));
-
-            fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", {
-                method: "POST",
-                mode: "no-cors",
-                body: formData
-            })
-                .then(() => {
-                    alert("Bracket Submitted Successfully!");
-                    setTimeout(fetchLeaderboard, 3000);
-                })
-                .catch(() => alert("Error submitting bracket."));
-        }
-
-        // --- INITIALIZE ---
-        renderBracket();
-        fetchLeaderboard();
-        setInterval(fetchLeaderboard, 60000); // Auto-refresh every minute
-    </script>
+renderBracket();
+fetchLeaderboard();
+setInterval(fetchLeaderboard, 60000);
+</script>
 </body>
-
 </html>
