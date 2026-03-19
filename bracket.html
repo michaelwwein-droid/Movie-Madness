@@ -141,80 +141,60 @@ function renderBracket() {
 async function fetchLeaderboard() {
     const tbody = document.getElementById("leaderboard-body");
     try {
-        // 1. Fetch Official Results and User Picks simultaneously
-        const [officialRes, picksRes] = await Promise.all([
-            fetch('official_bracket.json?t=' + Date.now()), // Path to your official JSON
-            fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" })
+        const [offRes, picksRes] = await Promise.all([
+            fetch('./official_bracket.json?t=' + Date.now()).then(r => r.ok ? r.json() : [[],[],[],[],[],[]]),
+            fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
         ]);
 
-        const officialData = await officialRes.json();
-        const userData = await picksRes.json();
+        const officialData = offRes;
+        const userData = picksRes;
         
         tbody.innerHTML = "";
-
+        
         if (!userData || userData.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='3'>Connected! Waiting for entries...</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='3'>No entries found in Google Sheets.</td></tr>";
             return;
         }
 
-        // 2. Process each user
-        const leaderboard = userData.map(entry => {
+        let scores = userData.map(entry => {
             const values = Object.values(entry);
-            const pName = entry["Name"] || entry["name"] || values[2] || "Player";
-            
-            // Skip header rows
-            if (pName.toString().toLowerCase() === "name") return null;
+            const pName = entry["Name"] || entry["name"] || values[2] || "User";
+            if (pName.toLowerCase() === "name") return null;
 
-            // Get user's picks (stored as a string in the Sheet)
             let pPicks = [];
-            try {
-                // The JSON is usually in the 4th column (values[3]) or entry["Bracket"]
-                pPicks = JSON.parse(entry["Bracket"] || values[3]); 
-            } catch(e) { pPicks = []; }
+            // Try to find the bracket JSON in the columns
+            const rawBracket = entry["Bracket"] || values[3] || values[4]; 
+            try { pPicks = JSON.parse(rawBracket); } catch(e) { pPicks = []; }
 
-            // 3. SCORING LOGIC (Exponential)
-            let totalScore = 0;
-            
-            // Loop through rounds 1 to 6 (Indices 0 to 5)
-            pPicks.forEach((round, rIdx) => {
-                const pointsPerMatch = Math.pow(2, rIdx); // 1, 2, 4, 8, 16, 32
-                
-                if (officialData[rIdx]) {
-                    round.forEach((match, mIdx) => {
-                        // Compare each movie in the user's match to the official match
-                        match.forEach(userMovie => {
-                            if (!userMovie) return;
-                            
-                            // Check if this movie exists in the same round of the official data
-                            const isCorrect = officialData[rIdx].some(offMatch => 
-                                offMatch.some(offMovie => offMovie && offMovie.name === userMovie.name)
-                            );
-
-                            if (isCorrect) {
-                                totalScore += pointsPerMatch;
+            let score = 0;
+            if (Array.isArray(pPicks)) {
+                pPicks.forEach((round, rIdx) => {
+                    const points = Math.pow(2, rIdx); 
+                    if (officialData[rIdx] && Array.isArray(round)) {
+                        // Flatten official winners for this round into a list of names
+                        const flatOfficial = officialData[rIdx].map(m => m.name);
+                        
+                        round.flat().forEach(pick => {
+                            if (pick && pick.name && flatOfficial.includes(pick.name)) {
+                                score += points;
                             }
                         });
-                    });
-                }
+                    }
+                });
+            }
+            return { name: pName, score: score };
+        }).filter(u => u).sort((a,b) => b.score - a.score);
+
+        if (scores.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='3'>Syncing entries...</td></tr>";
+        } else {
+            scores.forEach((u, i) => {
+                tbody.innerHTML += `<tr><td>${i+1}</td><td><strong>${u.name}</strong></td><td>${u.score}</td></tr>`;
             });
-
-            return { name: pName, score: totalScore };
-        }).filter(user => user !== null);
-
-        // 4. Sort by Score (Highest first)
-        leaderboard.sort((a, b) => b.score - a.score);
-
-        // 5. Render to Table
-        leaderboard.forEach((user, i) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${i + 1}</td><td><strong>${user.name}</strong></td><td>${user.score}</td>`;
-            tbody.appendChild(tr);
-        });
-
-        document.getElementById("timestamp").innerText = "Scores Updated: " + new Date().toLocaleTimeString();
+        }
     } catch (e) {
-        console.error(e);
-        tbody.innerHTML = "<tr><td colspan='3'>Error calculating scores. Check official_bracket.json</td></tr>";
+        console.error("Leaderboard Error:", e);
+        tbody.innerHTML = "<tr><td colspan='3'>⚠️ Error: Check if official_bracket.json exists on GitHub</td></tr>";
     }
 }
 
