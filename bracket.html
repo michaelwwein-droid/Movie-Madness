@@ -109,13 +109,24 @@ function renderBracket() {
             match.forEach((movie, tIdx) => {
                 const btn = document.createElement("button");
                 btn.innerHTML = movie ? `<span class="seed">${movie.seed}</span> ${movie.name}` : "TBD";
-                btn.onclick = () => {
+             btn.onclick = () => {
                     if (!movie) return;
+
+                    // --- THE FIX IS HERE ---
+                    // If we are in the FINALS (Round 6 / Index 5), set winner and STOP.
+                    if (rIdx === 5) {
+                        document.getElementById("champ-display").innerText = "🏆 Winner: " + movie.name;
+                        // We do NOT call renderBracket() again for a Round 7
+                        return; 
+                    }
+
+                    // Move the winner to the next round as usual
                     if (!bracketData[rIdx + 1]) bracketData[rIdx + 1] = [];
                     const nMatch = Math.floor(mIdx / 2);
                     if (!bracketData[rIdx + 1][nMatch]) bracketData[rIdx + 1][nMatch] = [null, null];
                     bracketData[rIdx + 1][nMatch][mIdx % 2] = movie;
-                    if (rIdx === 5) document.getElementById("champ-display").innerText = "🏆 " + movie.name;
+                    
+                    // Refresh the bracket visuals
                     renderBracket();
                 };
                 matchupDiv.appendChild(btn);
