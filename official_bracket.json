@@ -3,7 +3,7 @@
         "round": 1,
         "matchups": [
             [
-               { "name": "The Shawshank Redemption" }
+               {"seed": 1, "name": "The Shawshank Redemption"
             ],
             [
                 {
