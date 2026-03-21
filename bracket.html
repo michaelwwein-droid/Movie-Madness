@@ -179,6 +179,7 @@ function renderBracket() {
         }
 
         // 3. THE FETCHER: Grabs the data and puts it on the screen
+// 3. THE FETCHER: Grabs the data and puts it on the screen
         async function fetchLeaderboard() {
             const tbody = document.getElementById("leaderboard-body");
             try {
@@ -190,30 +191,31 @@ function renderBracket() {
                 const scores = calculateScores(picksRes, offRes);
                 tbody.innerHTML = "";
 
+                if (scores.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4'>No entries found yet.</td></tr>";
+                    return;
+                }
+
                 scores.forEach((user, i) => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td><strong>${user.name}</strong></td>
-                    <td>${user.score}</td>
-                    <td>${user.roundsCorrect}</td>
-                `;
+                        <td>${i + 1}</td>
+                        <td><strong>${user.name}</strong></td>
+                        <td>${user.score}</td>
+                        <td>${user.roundsCorrect}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
-                document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
+                
+                const timeEl = document.getElementById("timestamp");
+                if (timeEl) timeEl.innerText = "Last Sync: " + new Date().toLocaleTimeString();
             } catch (err) {
-                console.error(err);
-                tbody.innerHTML = "<tr><td colspan='4'>Syncing standings...</td></tr>";
+                console.error("Fetch Error:", err);
+                tbody.innerHTML = "<tr><td colspan='4'>Error loading scores. Check official_bracket.json exists.</td></tr>";
             }
         }
 
-        // 4. THE START: Runs everything when page opens
-        window.onload = () => {
-            if (typeof renderBracket === "function") renderBracket();
-            fetchLeaderboard();
-        };
-
-        // --- 4. SUBMISSION ---
+        // 4. SUBMISSION
         function submitBracket() {
             const name = document.getElementById("userName").value;
             if (!name) return alert("Please enter a name first!");
@@ -227,28 +229,16 @@ function renderBracket() {
                 mode: "no-cors",
                 body: formData
             })
-                .then(() => {
-                    alert("Bracket Submitted Successfully!");
-                    setTimeout(fetchLeaderboard, 3000);
-                })
-                .catch(() => alert("Error submitting bracket."));
+            .then(() => {
+                alert("Bracket Submitted Successfully!");
+                setTimeout(fetchLeaderboard, 3000); // Wait for Google to process
+            })
+            .catch((err) => alert("Error submitting bracket."));
         }
-function submitBracket() {
-    const name = document.getElementById("userName").value;
-    if(!name) return alert("Enter Name!");
-    const formData = new FormData();
-    formData.append("entry.674437929", name);
-    formData.append("entry.1121614126", JSON.stringify(bracketData));
-    fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", {
-        method: "POST", mode: "no-cors", body: formData
-    }).then(() => {
-        alert("Submitted!");
-        fetchLeaderboard();
-    });
-}
 
-renderBracket();
-fetchLeaderboard();
+        // 5. INITIALIZE
+        renderBracket();
+        fetchLeaderboard();
 </script>
 </body>
 </html>
