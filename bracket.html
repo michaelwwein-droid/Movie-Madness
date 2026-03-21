@@ -155,12 +155,15 @@
         <input type="text" id="userName" placeholder="Enter Your Name">
         <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
-<div id="bracket-modal" style="display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); overflow:auto; padding-top:50px;">
-    <div style="background:var(--card); margin:auto; padding:20px; border:1px solid var(--primary); width:95%; max-width:1200px; border-radius:12px; position:relative;">
-        <span onclick="closeBracket()" style="position:absolute; right:20px; top:10px; font-size:30px; cursor:pointer; color:var(--primary);">&times;</span>
-        <h2 style="text-align:center; color:var(--primary);">🏆 Official Tournament Progress</h2>
-        <div class="bracket-outer" id="official-bracket-ui" style="background:transparent; border:none;"></div>
-    </div>
+<div style="text-align: center; margin-bottom: 20px;">
+    <button id="toggle-official" class="btn-submit" style="width: auto; padding: 10px 20px;" onclick="showOfficialResults()">👁️ View Official Results</button>
+</div>
+
+<div id="official-results-display" style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+    <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners (So Far)</h3>
+    <div id="official-winners-list" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
+        </div>
+</div>
 </div>
     <table>
         <thead>
