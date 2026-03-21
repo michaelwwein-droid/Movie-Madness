@@ -350,57 +350,44 @@
                 })
                 .catch(() => alert("Error submitting bracket."));
         }
-        async function showOfficialResults() {
-    const modal = document.getElementById("bracket-modal");
-    const container = document.getElementById("official-bracket-ui");
-    
+  async function showOfficialResults() {
+    const display = document.getElementById("official-results-display");
+    const list = document.getElementById("official-winners-list");
+    const btn = document.getElementById("toggle-official");
+
+    // Toggle visibility
+    if (display.style.display === "block") {
+        display.style.display = "none";
+        btn.innerText = "👁️ View Official Results";
+        return;
+    }
+
     try {
         const response = await fetch(officialJSONUrl + '?t=' + Date.now());
-        const officialWinners = await response.json();
+        const official = await response.json();
         
-        modal.style.display = "block";
-        container.innerHTML = "Loading...";
+        list.innerHTML = "";
+        display.style.display = "block";
+        btn.innerText = "❌ Hide Official Results";
 
-        // We use a modified version of your render logic
-        container.innerHTML = "";
-        
-        // Loop through the 6 rounds
-        for (let rIdx = 0; rIdx < 6; rIdx++) {
-            const roundDiv = document.createElement("div");
-            roundDiv.className = "round";
-            roundDiv.innerHTML = `<div style="text-align:center; color:var(--primary); margin-bottom:10px;">Round ${rIdx+1}</div>`;
-            
-            // Determine how many matches are in this round (32, 16, 8, 4, 2, 1)
-            const numMatches = 32 / Math.pow(2, rIdx);
-            
-            for (let mIdx = 0; mIdx < numMatches; mIdx++) {
-                const matchupDiv = document.createElement("div");
-                matchupDiv.className = "matchup";
-                
-                // Show the winner(s) if they exist in your officialJSON
-                // Round 1 has two slots per matchup, others are single slots
-                const winnerName = (officialWinners[rIdx] && officialWinners[rIdx][mIdx]) 
-                                   ? officialWinners[rIdx][mIdx] 
-                                   : "---";
-
-                matchupDiv.innerHTML = `
-                    <div style="padding:8px; background:#222; border:1px solid #444; border-radius:4px; color:${winnerName !== '---' ? 'var(--primary)' : '#666'}">
-                        ${winnerName}
-                    </div>
-                `;
-                roundDiv.appendChild(matchupDiv);
+        official.forEach((round, i) => {
+            if (round.length > 0) {
+                const roundDiv = document.createElement("div");
+                roundDiv.style.minWidth = "120px";
+                roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i+1}</strong><br>` + 
+                                     round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
+                list.appendChild(roundDiv);
             }
-            container.appendChild(roundDiv);
+        });
+
+        if (list.innerHTML === "") {
+            list.innerHTML = "<p>No winners announced yet! Check back after the first game.</p>";
         }
+
     } catch (err) {
-        alert("Error loading official bracket: " + err.message);
+        alert("Could not load official results.");
     }
 }
-
-function closeBracket() {
-    document.getElementById("bracket-modal").style.display = "none";
-}
-
         // --- INITIALIZE ---
         renderBracket();
         fetchLeaderboard();
