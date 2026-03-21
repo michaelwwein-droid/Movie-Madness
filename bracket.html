@@ -35,12 +35,16 @@
 <div style="text-align: center; margin-bottom: 20px;">
     <button id="toggle-official" class="btn-submit" style="width: auto; padding: 10px 20px;" onclick="showOfficialResults()">👁️ View Official Results</button>
 </div>
+<div style="text-align: center; margin-bottom: 20px;">
+        <button id="toggle-official" class="btn-submit" 
+                style="width: auto; padding: 10px 20px; font-size: 0.9rem;" 
+                onclick="showOfficialResults()">👁️ View Official Results</button>
+    </div>
 
-<div id="official-results-display" style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-    <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners (So Far)</h3>
-    <div id="official-winners-list" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
-        </div>
-</div>
+    <div id="official-results-display" style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin: 0 auto 30px; max-width: 900px;">
+        <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners</h3>
+        <div id="official-winners-list" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;"></div>
+    </div>
 <table>
         <thead>
             <tr>
@@ -55,6 +59,15 @@
         </tbody>
     </table>
     <div id="timestamp" style="text-align:center; font-size:0.8rem; color:#666;"></div>
+<div style="text-align: center; margin: 40px 0; border-top: 1px solid #333; padding-top: 20px;">
+        <a href="https://michaelwwein-droid.github.io/Movie-Madness/" 
+           style="color: var(--primary); text-decoration: none; font-weight: bold; font-size: 1.1rem;">
+            ⬅️ Return to Submission Page to Enter New Bracket
+        </a>
+        <p style="color: #666; font-size: 0.8rem; margin-top: 10px;">
+            Entries close before the first showtime!
+        </p>
+    </div>
 
 <script>
 const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
