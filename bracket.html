@@ -33,14 +33,20 @@
         <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
 
-    <table>
+<table>
         <thead>
-            <tr><th>Rank</th><th>Player Name</th><th>Score</th></tr><th># Correct Picks</th>
+            <tr>
+                <th>Rank</th>
+                <th>Player Name</th>
+                <th>Score</th>
+                <th># Correct</th>
+            </tr>
         </thead>
         <tbody id="leaderboard-body">
-            <tr><td colspan="3">Syncing with Google Sheets...</td></tr>
+            <tr><td colspan="4">Syncing with Google Sheets...</td></tr>
         </tbody>
     </table>
+    <div id="timestamp" style="text-align:center; font-size:0.8rem; color:#666;"></div>
 
 <script>
 const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
