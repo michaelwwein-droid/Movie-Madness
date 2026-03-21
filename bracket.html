@@ -182,8 +182,8 @@
     <div id="timestamp"></div>
 
     <script>
-        // --- CONFIGURATION ---
-        const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
+         --- CONFIGURATION ---
+        const apiURL = 'https:script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
         const officialJSONUrl = './official_bracket.json';
 
         const fullMovies = [
@@ -226,7 +226,7 @@
             bracketData[0].push([fullMovies[i], fullMovies[i + 1]]);
         }
 
-        // --- LOGIC ---
+         --- LOGIC ---
         function renderBracket() {
             const container = document.getElementById("bracket-ui");
             container.innerHTML = "";
@@ -357,7 +357,6 @@
     const list = document.getElementById("official-winners-list");
     const btn = document.getElementById("toggle-official");
 
-    // Toggle visibility
     if (display.style.display === "block") {
         display.style.display = "none";
         btn.innerText = "👁️ View Official Results";
@@ -372,25 +371,26 @@
         display.style.display = "block";
         btn.innerText = "❌ Hide Official Results";
 
-        official.forEach((round, i) => {
-            if (round.length > 0) {
+        // STARTING AT i = 1 SKIPS THE FIRST ROUND (64 MOVIES)
+        for (let i = 1; i < official.length; i++) {
+            const round = official[i];
+            if (round && round.length > 0) {
                 const roundDiv = document.createElement("div");
                 roundDiv.style.minWidth = "120px";
-                roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i+1}</strong><br>` + 
+                // i is 1, so Round ${i} correctly labels it "Round 1"
+                roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i} Winners</strong><br>` + 
                                      round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
                 list.appendChild(roundDiv);
             }
-        });
+        }
 
         if (list.innerHTML === "") {
             list.innerHTML = "<p>No winners announced yet! Check back after the first game.</p>";
         }
-
     } catch (err) {
         alert("Could not load official results.");
     }
 }
-
         // --- INITIALIZE ---
         renderBracket();
         fetchLeaderboard();
