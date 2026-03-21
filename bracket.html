@@ -305,7 +305,7 @@
             return scoresList.sort((a, b) => b.score - a.score);
         }
 
-sync function fetchLeaderboard() {
+async function fetchLeaderboard() {
     const tbody = document.getElementById("leaderboard-body");
     try {
         const [offRes, picksRes] = await Promise.all([
