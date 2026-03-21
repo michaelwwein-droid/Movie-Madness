@@ -305,33 +305,40 @@
             return scoresList.sort((a, b) => b.score - a.score);
         }
 
-        async function fetchLeaderboard() {
-            const tbody = document.getElementById("leaderboard-body");
-            try {
-                const [offRes, picksRes] = await Promise.all([
-                    fetch(officialJSONUrl + '?t=' + Date.now()).then(r => r.json()),
-                    fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
-                ]);
+sync function fetchLeaderboard() {
+    const tbody = document.getElementById("leaderboard-body");
+    try {
+        const [offRes, picksRes] = await Promise.all([
+            fetch(officialJSONUrl + '?t=' + Date.now()).then(r => r.json()).catch(() => []),
+            fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
+        ]);
 
-                const scores = calculateScores(picksRes, offRes);
-                tbody.innerHTML = "";
+        const scores = calculateScores(picksRes, offRes);
+        tbody.innerHTML = "";
 
-                if (scores.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4'>No entries found yet.</td></tr>";
-                    return;
-                }
-
-                scores.forEach((user, i) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `<td>${i + 1}</td><td><strong>${user.name}</strong></td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
-                    tbody.appendChild(tr);
-                });
-      document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = "<tr><td colspan='4'>Error loading leaderboard. Ensure official_bracket.json is uploaded.</td></tr>";
-            }
+        if (!scores || scores.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4'>No entries found yet.</td></tr>";
+            return;
         }
+
+        // Back to 4 columns: Rank, Name, Score, Correct
+        scores.forEach((user, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td><strong>${user.name}</strong></td>
+                <td>${user.score}</td>
+                <td>${user.roundsCorrect}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
+    } catch (err) {
+        console.error("Leaderboard Sync Error:", err);
+        tbody.innerHTML = "<tr><td colspan='4'>Syncing standings...</td></tr>";
+    }
+}
 
         function submitBracket() {
             const name = document.getElementById("userName").value;
@@ -371,16 +378,19 @@
         display.style.display = "block";
         btn.innerText = "❌ Hide Official Results";
 
-        // STARTING AT i = 1 SKIPS THE FIRST ROUND (64 MOVIES)
-        for (let i = 1; i < official.length; i++) {
-            const round = official[i];
-            if (round && round.length > 0) {
-                const roundDiv = document.createElement("div");
-                roundDiv.style.minWidth = "120px";
-                // i is 1, so Round ${i} correctly labels it "Round 1"
-                roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i} Winners</strong><br>` + 
-                                     round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
-                list.appendChild(roundDiv);
+        // SKIP ROUND 1 (Index 0 is the starting 64 movies)
+        if (official && official.length > 1) {
+            for (let i = 1; i < official.length; i++) {
+                const round = official[i];
+                if (round && round.length > 0) {
+                    const roundDiv = document.createElement("div");
+                    roundDiv.style.minWidth = "120px";
+                    roundDiv.style.marginBottom = "10px";
+                    // i=1 (Round 2 in JSON) displays as "Round 1 Winners"
+                    roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i} Winners</strong><br>` + 
+                                         round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
+                    list.appendChild(roundDiv);
+                }
             }
         }
 
