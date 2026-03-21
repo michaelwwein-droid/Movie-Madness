@@ -35,7 +35,7 @@
 
     <table>
         <thead>
-            <tr><th>Rank</th><th>Player Name</th><th>Score</th></tr>
+            <tr><th>Rank</th><th>Player Name</th><th>Score</th></tr><th># Correct Picks</th>
         </thead>
         <tbody id="leaderboard-body">
             <tr><td colspan="3">Syncing with Google Sheets...</td></tr>
@@ -118,30 +118,114 @@ function renderBracket() {
     });
 }
 
-async function fetchLeaderboard() {
-    const tbody = document.getElementById("leaderboard-body");
-    try {
-        const response = await fetch(`${apiURL}?t=${Date.now()}`, { 
-            method: "GET", 
-            redirect: "follow" 
-        });
-        const data = await response.json();
-        tbody.innerHTML = "";
+ function normalize(item) {
+            if (!item) return "";
+            let name = (item && typeof item === 'object') ? (item.name || "") : item;
+            return name.toString()
+                .toLowerCase()
+                .replace(/^\d+\s*/, "")
+                .replace(/[^a-z0-9]/g, "")
+                .trim();
+        }
 
-        data.forEach((entry, i) => {
-            const values = Object.values(entry);
-            const pName = entry["Name"] || entry["name"] || values[2] || "User";
-            if (pName.toLowerCase() !== "name") {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td>${i}</td><td><strong>${pName}</strong></td><td>0</td>`;
-                tbody.appendChild(tr);
+        // 2. THE BRAIN: Does the math
+        function calculateScores(users, official) {
+            const scoresList = [];
+            if (!official || !Array.isArray(official)) return [];
+
+            users.forEach(user => {
+                const rowValues = Object.values(user);
+                // Index 2 = Name, Index 3 = Bracket (since Email is in Col 2)
+                const pName = rowValues[2] || "Anonymous";
+                const rawBracket = rowValues[3];
+
+                if (!rawBracket || pName === "Name") return;
+
+                let pBracket = [];
+                try {
+                    pBracket = typeof rawBracket === 'string' ? JSON.parse(rawBracket) : rawBracket;
+                } catch (e) { return; }
+
+                let score = 0;
+                let roundsCorrect = 0;
+
+                official.forEach((offRound, rIdx) => {
+                    const points = Math.pow(2, rIdx);
+                    const offWinners = Array.from(offRound || []).flat(Infinity)
+                        .filter(m => m).map(m => normalize(m));
+
+                    if (pBracket && pBracket[rIdx]) {
+                        const userPicks = Array.from(pBracket[rIdx]).flat(Infinity)
+                            .filter(p => p).map(p => normalize(p));
+
+                        userPicks.forEach(pickName => {
+                            if (pickName && offWinners.includes(pickName)) {
+                                score += points;
+                                roundsCorrect++;
+                            }
+                        });
+                    }
+                });
+                scoresList.push({ name: pName, score: score, roundsCorrect: roundsCorrect });
+            });
+            return scoresList.sort((a, b) => b.score - a.score);
+        }
+
+        // 3. THE FETCHER: Grabs the data and puts it on the screen
+        async function fetchLeaderboard() {
+            const tbody = document.getElementById("leaderboard-body");
+            try {
+                const [offRes, picksRes] = await Promise.all([
+                    fetch(officialJSONUrl + '?t=' + Date.now()).then(r => r.json()),
+                    fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
+                ]);
+
+                const scores = calculateScores(picksRes, offRes);
+                tbody.innerHTML = "";
+
+                scores.forEach((user, i) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td><strong>${user.name}</strong></td>
+                    <td>${user.score}</td>
+                    <td>${user.roundsCorrect}</td>
+                `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = "<tr><td colspan='4'>Syncing standings...</td></tr>";
             }
-        });
-    } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='3'>Check internet connection...</td></tr>";
-    }
-}
+        }
 
+        // 4. THE START: Runs everything when page opens
+        window.onload = () => {
+            if (typeof renderBracket === "function") renderBracket();
+            fetchLeaderboard();
+        };
+
+        // --- 4. SUBMISSION ---
+        function submitBracket() {
+            const name = document.getElementById("userName").value;
+            if (!name) return alert("Please enter a name first!");
+
+            const formData = new FormData();
+            formData.append("entry.674437929", name);
+            formData.append("entry.1121614126", JSON.stringify(bracketData));
+
+            fetch("https://docs.google.com/forms/d/e/1FAIpQLSfTBnMkkUFIzn-OWvJ1JcQNzLGrmAPi6Mg_bsr-ODidwEz4rw/formResponse", {
+                method: "POST",
+                mode: "no-cors",
+                body: formData
+            })
+                .then(() => {
+                    alert("Bracket Submitted Successfully!");
+                    setTimeout(fetchLeaderboard, 3000);
+                })
+                .catch(() => alert("Error submitting bracket."));
+        }
 function submitBracket() {
     const name = document.getElementById("userName").value;
     if(!name) return alert("Enter Name!");
