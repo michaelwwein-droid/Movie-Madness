@@ -155,14 +155,12 @@
         <input type="text" id="userName" placeholder="Enter Your Name">
         <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
-<div style="text-align: center; margin-bottom: 20px;">
-    <button id="toggle-official" class="btn-submit" style="width: auto; padding: 10px 20px;" onclick="showOfficialResults()">👁️ View Official Results</button>
-</div>
-
-<div id="official-results-display" style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-    <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners (So Far)</h3>
-    <div id="official-winners-list" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
-        </div>
+<div id="bracket-modal" style="display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); overflow:auto; padding-top:50px;">
+    <div style="background:var(--card); margin:auto; padding:20px; border:1px solid var(--primary); width:95%; max-width:1200px; border-radius:12px; position:relative;">
+        <span onclick="closeBracket()" style="position:absolute; right:20px; top:10px; font-size:30px; cursor:pointer; color:var(--primary);">&times;</span>
+        <h2 style="text-align:center; color:var(--primary);">🏆 Official Tournament Progress</h2>
+        <div class="bracket-outer" id="official-bracket-ui" style="background:transparent; border:none;"></div>
+    </div>
 </div>
     <table>
         <thead>
@@ -182,8 +180,8 @@
     <div id="timestamp"></div>
 
     <script>
-         //--- CONFIGURATION ---
-        const apiURL = 'https:script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
+        // --- CONFIGURATION ---
+        const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
         const officialJSONUrl = './official_bracket.json';
 
         const fullMovies = [
@@ -226,7 +224,7 @@
             bracketData[0].push([fullMovies[i], fullMovies[i + 1]]);
         }
 
-         //--- LOGIC ---
+        // --- LOGIC ---
         function renderBracket() {
             const container = document.getElementById("bracket-ui");
             container.innerHTML = "";
@@ -305,40 +303,33 @@
             return scoresList.sort((a, b) => b.score - a.score);
         }
 
-async function fetchLeaderboard() {
-    const tbody = document.getElementById("leaderboard-body");
-    try {
-        const [offRes, picksRes] = await Promise.all([
-            fetch(officialJSONUrl + '?t=' + Date.now()).then(r => r.json()).catch(() => []),
-            fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
-        ]);
+        async function fetchLeaderboard() {
+            const tbody = document.getElementById("leaderboard-body");
+            try {
+                const [offRes, picksRes] = await Promise.all([
+                    fetch(officialJSONUrl + '?t=' + Date.now()).then(r => r.json()),
+                    fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
+                ]);
 
-        const scores = calculateScores(picksRes, offRes);
-        tbody.innerHTML = "";
+                const scores = calculateScores(picksRes, offRes);
+                tbody.innerHTML = "";
 
-        if (!scores || scores.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4'>No entries found yet.</td></tr>";
-            return;
+                if (scores.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4'>No entries found yet.</td></tr>";
+                    return;
+                }
+
+                scores.forEach((user, i) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${i + 1}</td><td><strong>${user.name}</strong></td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = "<tr><td colspan='4'>Error loading leaderboard. Ensure official_bracket.json is uploaded.</td></tr>";
+            }
         }
-
-        // Back to 4 columns: Rank, Name, Score, Correct
-        scores.forEach((user, i) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${i + 1}</td>
-                <td><strong>${user.name}</strong></td>
-                <td>${user.score}</td>
-                <td>${user.roundsCorrect}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-        
-        document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
-    } catch (err) {
-        console.error("Leaderboard Sync Error:", err);
-        tbody.innerHTML = "<tr><td colspan='4'>Syncing standings...</td></tr>";
-    }
-}
 
         function submitBracket() {
             const name = document.getElementById("userName").value;
@@ -360,47 +351,56 @@ async function fetchLeaderboard() {
                 .catch(() => alert("Error submitting bracket."));
         }
         async function showOfficialResults() {
-    const display = document.getElementById("official-results-display");
-    const list = document.getElementById("official-winners-list");
-    const btn = document.getElementById("toggle-official");
-
-    if (display.style.display === "block") {
-        display.style.display = "none";
-        btn.innerText = "👁️ View Official Results";
-        return;
-    }
-
+    const modal = document.getElementById("bracket-modal");
+    const container = document.getElementById("official-bracket-ui");
+    
     try {
         const response = await fetch(officialJSONUrl + '?t=' + Date.now());
-        const official = await response.json();
+        const officialWinners = await response.json();
         
-        list.innerHTML = "";
-        display.style.display = "block";
-        btn.innerText = "❌ Hide Official Results";
+        modal.style.display = "block";
+        container.innerHTML = "Loading...";
 
-        // SKIP ROUND 1 (Index 0 is the starting 64 movies)
-        if (official && official.length > 1) {
-            for (let i = 1; i < official.length; i++) {
-                const round = official[i];
-                if (round && round.length > 0) {
-                    const roundDiv = document.createElement("div");
-                    roundDiv.style.minWidth = "120px";
-                    roundDiv.style.marginBottom = "10px";
-                    // i=1 (Round 2 in JSON) displays as "Round 1 Winners"
-                    roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i} Winners</strong><br>` + 
-                                         round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
-                    list.appendChild(roundDiv);
-                }
+        // We use a modified version of your render logic
+        container.innerHTML = "";
+        
+        // Loop through the 6 rounds
+        for (let rIdx = 0; rIdx < 6; rIdx++) {
+            const roundDiv = document.createElement("div");
+            roundDiv.className = "round";
+            roundDiv.innerHTML = `<div style="text-align:center; color:var(--primary); margin-bottom:10px;">Round ${rIdx+1}</div>`;
+            
+            // Determine how many matches are in this round (32, 16, 8, 4, 2, 1)
+            const numMatches = 32 / Math.pow(2, rIdx);
+            
+            for (let mIdx = 0; mIdx < numMatches; mIdx++) {
+                const matchupDiv = document.createElement("div");
+                matchupDiv.className = "matchup";
+                
+                // Show the winner(s) if they exist in your officialJSON
+                // Round 1 has two slots per matchup, others are single slots
+                const winnerName = (officialWinners[rIdx] && officialWinners[rIdx][mIdx]) 
+                                   ? officialWinners[rIdx][mIdx] 
+                                   : "---";
+
+                matchupDiv.innerHTML = `
+                    <div style="padding:8px; background:#222; border:1px solid #444; border-radius:4px; color:${winnerName !== '---' ? 'var(--primary)' : '#666'}">
+                        ${winnerName}
+                    </div>
+                `;
+                roundDiv.appendChild(matchupDiv);
             }
-        }
-
-        if (list.innerHTML === "") {
-            list.innerHTML = "<p>No winners announced yet! Check back after the first game.</p>";
+            container.appendChild(roundDiv);
         }
     } catch (err) {
-        alert("Could not load official results.");
+        alert("Error loading official bracket: " + err.message);
     }
 }
+
+function closeBracket() {
+    document.getElementById("bracket-modal").style.display = "none";
+}
+
         // --- INITIALIZE ---
         renderBracket();
         fetchLeaderboard();
