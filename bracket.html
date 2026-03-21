@@ -155,7 +155,15 @@
         <input type="text" id="userName" placeholder="Enter Your Name">
         <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
+<div style="text-align: center; margin-bottom: 20px;">
+    <button id="toggle-official" class="btn-submit" style="width: auto; padding: 10px 20px;" onclick="showOfficialResults()">👁️ View Official Results</button>
+</div>
 
+<div id="official-results-display" style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+    <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners (So Far)</h3>
+    <div id="official-winners-list" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
+        </div>
+</div>
     <table>
         <thead>
             <tr>
@@ -344,6 +352,44 @@
                 })
                 .catch(() => alert("Error submitting bracket."));
         }
+        async function showOfficialResults() {
+    const display = document.getElementById("official-results-display");
+    const list = document.getElementById("official-winners-list");
+    const btn = document.getElementById("toggle-official");
+
+    // Toggle visibility
+    if (display.style.display === "block") {
+        display.style.display = "none";
+        btn.innerText = "👁️ View Official Results";
+        return;
+    }
+
+    try {
+        const response = await fetch(officialJSONUrl + '?t=' + Date.now());
+        const official = await response.json();
+        
+        list.innerHTML = "";
+        display.style.display = "block";
+        btn.innerText = "❌ Hide Official Results";
+
+        official.forEach((round, i) => {
+            if (round.length > 0) {
+                const roundDiv = document.createElement("div");
+                roundDiv.style.minWidth = "120px";
+                roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i+1}</strong><br>` + 
+                                     round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
+                list.appendChild(roundDiv);
+            }
+        });
+
+        if (list.innerHTML === "") {
+            list.innerHTML = "<p>No winners announced yet! Check back after the first game.</p>";
+        }
+
+    } catch (err) {
+        alert("Could not load official results.");
+    }
+}
 
         // --- INITIALIZE ---
         renderBracket();
