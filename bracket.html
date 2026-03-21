@@ -326,6 +326,22 @@
                     tr.innerHTML = `<td>${i + 1}</td><td><strong>${user.name}</strong></td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
                     tbody.appendChild(tr);
                 });
+                winContainer.innerHTML = "";
+if (offRes.length > 1) { 
+    // We start 'i' at 1 to skip the initial list of 64 movies
+    for (let i = 1; i < offRes.length; i++) {
+        const round = offRes[i];
+        if (round && round.length > 0) {
+            const roundDiv = document.createElement("div");
+            roundDiv.className = "round-list";
+            // i is the index, so i=1 is actually the winners of the first set of games
+            roundDiv.innerHTML = `<h3>Round ${i} Winners</h3><ul>${round.map(m => `<li>${m}</li>`).join("")}</ul>`;
+            winContainer.appendChild(roundDiv);
+        }
+    }
+} else { 
+    winContainer.innerHTML = "<p style='text-align:center; color:#666;'>Tournament in progress. Round 1 winners will appear here soon!</p>"; 
+}
                 document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
             } catch (err) {
                 console.error(err);
