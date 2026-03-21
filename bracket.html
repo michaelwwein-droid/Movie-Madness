@@ -3,45 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Madness | Leaderboard & Results</title>
+    <title>Movie Madness | Leaderboard</title>
     <style>
         :root { --primary: #ffcc00; --bg: #121212; --card: #1a1a1a; --text: #eeeeee; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
-        h1 { text-align: center; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; }
+        h1 { text-align: center; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; margin-top: 30px; }
         
         /* Leaderboard Table */
         table { width: 100%; max-width: 900px; margin: 30px auto; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; }
         th, td { padding: 15px; border-bottom: 1px solid #333; text-align: center; }
         th { background: #222; color: var(--primary); text-transform: uppercase; font-size: 0.9rem; }
-        tr:last-child td { border-bottom: none; }
         #timestamp { text-align: center; color: #666; font-size: 0.8rem; margin-top: 10px; }
 
-        /* Buttons */
-        .btn-main { background: var(--primary); color: black; padding: 12px 25px; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; transition: 0.3s; display: block; margin: 20px auto; }
+        /* Button Style */
+        .btn-main { background: var(--primary); color: black; padding: 12px 25px; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; display: block; margin: 20px auto; transition: 0.3s; }
         .btn-main:hover { transform: scale(1.05); background: #e6b800; }
 
-        /* Bracket Popup (Modal) Styles */
-        #bracket-modal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); overflow:auto; padding-top:40px; }
-        .modal-content { background:var(--card); margin:auto; padding:20px; border:1px solid var(--primary); width:95%; max-width:1300px; border-radius:12px; position:relative; min-height: 80vh; }
-        .close-btn { position:absolute; right:25px; top:15px; font-size:35px; cursor:pointer; color:var(--primary); font-weight:bold; }
+        /* Modal / Popup */
+        #bracket-modal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.95); overflow:auto; }
+        .modal-content { background:var(--card); margin: 5vh auto; padding:30px; border:1px solid var(--primary); width:95%; max-width:1400px; border-radius:12px; position:relative; }
+        .close-btn { position:absolute; right:20px; top:10px; font-size:40px; cursor:pointer; color:var(--primary); }
         
-        /* Reusing your Bracket UI styles for the popup */
-        .bracket-outer { display: flex; overflow-x: auto; gap: 20px; padding: 20px; background: transparent; }
-        .round { min-width: 200px; display: flex; flex-direction: column; justify-content: space-around; }
-        .matchup { margin: 10px 0; display: flex; flex-direction: column; justify-content: center; min-height: 80px; border-left: 2px solid #444; padding-left: 10px; }
-        .winner-slot { padding: 8px; background: #222; border: 1px solid #444; border-radius: 4px; font-size: 0.85rem; min-height: 20px; color: #888; }
-        .winner-active { color: var(--primary); border-color: var(--primary); font-weight: bold; }
-
-        /* Footer Link */
-        .footer-link { text-align: center; margin: 50px 0; border-top: 1px solid #333; padding-top: 20px; }
-        .footer-link a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 1.1rem; }
+        /* Bracket Visuals */
+        .bracket-outer { display: flex; overflow-x: auto; gap: 30px; padding: 20px; }
+        .round { min-width: 220px; display: flex; flex-direction: column; justify-content: space-around; }
+        .matchup { margin: 10px 0; display: flex; flex-direction: column; justify-content: center; min-height: 90px; border-left: 2px solid #444; padding-left: 10px; }
+        .slot { padding: 10px; background: #222; border: 1px solid #444; border-radius: 6px; font-size: 0.85rem; color: #666; text-align: left; margin: 4px 0; }
+        .winner { color: var(--primary); border-color: var(--primary); font-weight: bold; background: #2a2a2a; }
     </style>
 </head>
 <body>
 
     <h1>🎬 Movie Madness Standings</h1>
 
-    <button class="btn-main" onclick="showOfficialResults()">👁️ View Official Bracket</button>
+    <button class="btn-main" onclick="showOfficialBracket()">👁️ View Official Bracket</button>
 
     <table>
         <thead>
@@ -53,76 +48,28 @@
             </tr>
         </thead>
         <tbody id="leaderboard-body">
-            <tr><td colspan="4">Syncing with Google Sheets...</td></tr>
+            <tr><td colspan="4">Syncing Standings...</td></tr>
         </tbody>
     </table>
     <div id="timestamp"></div>
 
     <div id="bracket-modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeBracket()">&times;</span>
-            <h2 style="text-align:center; color:var(--primary); margin-bottom: 30px;">🏆 Official Tournament Progress</h2>
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 style="text-align:center; color:var(--primary);">🏆 Master Tournament Bracket</h2>
             <div class="bracket-outer" id="official-bracket-ui"></div>
         </div>
     </div>
 
-    <div class="footer-link">
-        <a href="https://michaelwwein-droid.github.io/Movie-Madness/">⬅️ Return to Submission Page to Enter New Bracket</a>
-    </div>
-
 <script>
-    // --- CONFIGURATION ---
     const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
     const officialJSONUrl = 'https://michaelwwein-droid.github.io/Movie-Madness/official_bracket.json';
 
-    // 1. TOOL: Normalize names for matching
-    function normalize(item) {
-        if (!item) return "";
-        let name = (item && typeof item === 'object') ? (item.name || "") : item;
-        return name.toString().toLowerCase()
-            .replace(/^\d+\s*/, "")
-            .replace(/[^a-z0-9]/g, "")
-            .trim();
+    function normalize(name) {
+        if (!name) return "";
+        return name.toString().toLowerCase().replace(/^\d+\s*/, "").replace(/[^a-z0-9]/g, "").trim();
     }
 
-    // 2. MATH: Calculate Scores
-    function calculateScores(users, official) {
-        const scoresList = [];
-        if (!official || !Array.isArray(official)) return [];
-
-        users.forEach(user => {
-            const rowValues = Object.values(user);
-            const pName = rowValues[2] || "Anonymous";
-            const rawBracket = rowValues[3];
-            if (!rawBracket || pName === "Name") return;
-
-            let pBracket = [];
-            try { pBracket = typeof rawBracket === 'string' ? JSON.parse(rawBracket) : rawBracket; } 
-            catch (e) { return; }
-
-            let score = 0;
-            let roundsCorrect = 0;
-
-            official.forEach((offRound, rIdx) => {
-                const points = Math.pow(2, rIdx); // 1, 2, 4, 8, 16, 32
-                const offWinners = Array.from(offRound || []).flat(Infinity).filter(m => m).map(m => normalize(m));
-
-                if (pBracket && pBracket[rIdx]) {
-                    const userPicks = Array.from(pBracket[rIdx]).flat(Infinity).filter(p => p).map(p => normalize(p));
-                    userPicks.forEach(pickName => {
-                        if (pickName && offWinners.includes(pickName)) {
-                            score += points;
-                            roundsCorrect++;
-                        }
-                    });
-                }
-            });
-            scoresList.push({ name: pName, score, roundsCorrect });
-        });
-        return scoresList.sort((a, b) => b.score - a.score);
-    }
-
-    // 3. FETCH: Get data and fill table
     async function fetchLeaderboard() {
         const tbody = document.getElementById("leaderboard-body");
         try {
@@ -131,66 +78,67 @@
                 fetch(`${apiURL}?t=${Date.now()}`, { method: "GET", redirect: "follow" }).then(r => r.json())
             ]);
 
-            const scores = calculateScores(picksRes, offRes);
-            tbody.innerHTML = "";
+            // Calculate Scores
+            const scores = picksRes.map(user => {
+                const vals = Object.values(user);
+                const name = vals[2] || "Anonymous";
+                const bracket = typeof vals[3] === 'string' ? JSON.parse(vals[3]) : vals[3];
+                let score = 0, correct = 0;
 
-            if (scores.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='4'>No entries found yet.</td></tr>";
-                return;
-            }
+                if (bracket && Array.isArray(offRes)) {
+                    offRes.forEach((round, rIdx) => {
+                        const points = Math.pow(2, rIdx);
+                        const winners = Array.from(round || []).flat(Infinity).map(normalize);
+                        const picks = Array.from(bracket[rIdx] || []).flat(Infinity).map(normalize);
+                        
+                        picks.forEach(p => {
+                            if (p && winners.includes(p)) { score += points; correct++; }
+                        });
+                    });
+                }
+                return { name, score, correct };
+            }).filter(u => u.name !== "Name").sort((a, b) => b.score - a.score);
 
-            scores.forEach((user, i) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td>${i + 1}</td><td><strong>${user.name}</strong></td><td>${user.score}</td><td>${user.roundsCorrect}</td>`;
-                tbody.appendChild(tr);
-            });
+            tbody.innerHTML = scores.map((u, i) => `
+                <tr><td>${i+1}</td><td><strong>${u.name}</strong></td><td>${u.score}</td><td>${u.correct}</td></tr>
+            `).join("");
+            
             document.getElementById("timestamp").innerText = "Last Sync: " + new Date().toLocaleTimeString();
-        } catch (err) {
-            console.error(err);
-            tbody.innerHTML = "<tr><td colspan='4'>Syncing standings... (Check official_bracket.json exists)</td></tr>";
+        } catch (e) {
+            tbody.innerHTML = "<tr><td colspan='4'>Error loading leaderboard.</td></tr>";
         }
     }
 
-    // 4. POPUP: Build and show the official bracket
-    async function showOfficialResults() {
+    async function showOfficialBracket() {
         const modal = document.getElementById("bracket-modal");
         const container = document.getElementById("official-bracket-ui");
-        
+        modal.style.display = "block";
+        container.innerHTML = "Loading...";
+
         try {
-            const response = await fetch(officialJSONUrl + '?t=' + Date.now());
-            const officialWinners = await response.json();
-            
-            modal.style.display = "block";
+            const official = await fetch(officialJSONUrl + '?t=' + Date.now()).then(r => r.json());
             container.innerHTML = "";
 
-            for (let rIdx = 0; rIdx < 6; rIdx++) {
+            for (let r = 0; r < 6; r++) {
                 const roundDiv = document.createElement("div");
                 roundDiv.className = "round";
-                roundDiv.innerHTML = `<div style="text-align:center; color:var(--primary); font-weight:bold; margin-bottom:10px;">ROUND ${rIdx+1}</div>`;
+                roundDiv.innerHTML = `<div style="text-align:center; color:var(--primary); font-size:0.7rem; margin-bottom:10px;">ROUND ${r+1}</div>`;
                 
-                const numSlots = 32 / Math.pow(2, rIdx);
-                for (let sIdx = 0; sIdx < numSlots; sIdx++) {
-                    const matchupDiv = document.createElement("div");
-                    matchupDiv.className = "matchup";
-                    
-                    const winnerName = (officialWinners[rIdx] && officialWinners[rIdx][sIdx]) ? officialWinners[rIdx][sIdx] : "---";
-                    const activeClass = winnerName !== "---" ? "winner-active" : "";
-
-                    matchupDiv.innerHTML = `<div class="winner-slot ${activeClass}">${winnerName}</div>`;
-                    roundDiv.appendChild(matchupDiv);
+                const slots = 32 / Math.pow(2, r);
+                for (let s = 0; s < slots; s++) {
+                    const matchDiv = document.createElement("div");
+                    matchDiv.className = "matchup";
+                    const name = (official[r] && official[r][s]) ? official[r][s] : "TBD";
+                    matchDiv.innerHTML = `<div class="slot ${name !== 'TBD' ? 'winner' : ''}">${name}</div>`;
+                    roundDiv.appendChild(matchDiv);
                 }
                 container.appendChild(roundDiv);
             }
-        } catch (err) {
-            alert("Error loading official bracket data.");
-        }
+        } catch (e) { container.innerHTML = "Error loading bracket."; }
     }
 
-    function closeBracket() {
-        document.getElementById("bracket-modal").style.display = "none";
-    }
+    function closeModal() { document.getElementById("bracket-modal").style.display = "none"; }
 
-    // --- INITIALIZE ---
     fetchLeaderboard();
 </script>
 </body>
