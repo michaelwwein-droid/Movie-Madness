@@ -8,15 +8,18 @@
     <style>
         :root {
             --primary: #ffcc00;
+            /* Gold */
             --bg: #121212;
             --card: #1a1a1a;
             --text: #eeeeee;
+            --border: #333;
+            --button-bg: #2a2a2a;
         }
 
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
             margin: 0;
         }
@@ -25,58 +28,114 @@
             text-align: center;
             color: var(--primary);
             text-transform: uppercase;
-        }
-
-        .bracket-outer {
-            display: flex;
-            overflow-x: auto;
-            gap: 30px;
-            padding: 40px;
-            background: var(--card);
-            border-radius: 12px;
-            border: 1px solid #333;
+            letter-spacing: 2px;
             margin-bottom: 30px;
         }
 
+        /* The main scrollable container */
+        .bracket-outer {
+            display: flex;
+            overflow-x: auto;
+            gap: 40px;
+            padding: 40px;
+            background: var(--card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            min-height: 600px;
+            /* Ensures space for the 64-team start */
+        }
+
+        /* The round container - no longer centering teams in the middle */
         .round {
             min-width: 250px;
             display: flex;
             flex-direction: column;
+            justify-content: flex-start;
+            /* Aligns everything to the top */
+            flex-grow: 1;
+        }
+
+        /* Round 1 Matchup Height */
+        .round:nth-child(1) .matchup {
+            height: 80px;
+            margin: 10px 0;
+        }
+
+        /* Round 2 Matchup Height (Double the space) */
+        .round:nth-child(2) .matchup {
+            height: 160px;
+            margin: 10px 0;
+        }
+
+        /* Round 3 Matchup Height */
+        .round:nth-child(3) .matchup {
+            height: 320px;
+            margin: 10px 0;
+        }
+
+        /* Round 4 Matchup Height */
+        .round:nth-child(4) .matchup {
+            height: 640px;
+            margin: 10px 0;
         }
 
         .matchup {
-            margin: 15px 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-height: 110px;
+            /* Keeps the two buttons together in the center of their slot */
             border-left: 2px solid #444;
-            padding-left: 10px;
+            padding-left: 12px;
+            transition: border-color 0.3s;
+        }
+
+        .matchup {
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 2px solid #444;
+            padding-left: 12px;
+            transition: border-color 0.3s;
+        }
+
+        /* Visual connector effect on hover */
+        .matchup:hover {
+            border-left-color: var(--primary);
         }
 
         button {
-            background: #2a2a2a;
+            background: var(--button-bg);
             color: white;
             border: 1px solid #444;
-            padding: 10px;
-            margin: 3px 0;
+            padding: 12px;
+            margin: 4px 0;
             cursor: pointer;
             border-radius: 6px;
             text-align: left;
-            transition: 0.2s;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         button:hover {
             border-color: var(--primary);
             background: #333;
+            transform: translateX(5px);
         }
 
         .seed {
             color: var(--primary);
             font-weight: bold;
-            margin-right: 8px;
+            margin-right: 10px;
+            font-family: monospace;
         }
 
+        /* Form and Leaderboard styling */
         .controls {
             text-align: center;
             margin: 40px auto;
@@ -84,45 +143,56 @@
             padding: 30px;
             border-radius: 12px;
             max-width: 500px;
-            border: 1px solid #333;
+            border: 1px solid var(--border);
         }
 
         input {
             padding: 12px;
-            width: 80%;
+            width: 90%;
             background: #222;
             border: 1px solid #444;
             color: white;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             border-radius: 6px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
         }
 
         .btn-submit {
             background: var(--primary);
             color: black;
-            padding: 12px 30px;
+            padding: 14px 30px;
             border: none;
             font-weight: bold;
             cursor: pointer;
             border-radius: 6px;
             width: 100%;
             text-transform: uppercase;
+            transition: opacity 0.2s;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
         }
 
         table {
             width: 100%;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 30px auto;
             border-collapse: collapse;
             background: var(--card);
             border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         th,
         td {
             padding: 15px;
-            border: 1px solid #333;
+            border: 1px solid var(--border);
             text-align: center;
         }
 
@@ -133,12 +203,34 @@
             letter-spacing: 1px;
         }
 
+        tr:hover td {
+            background: #222;
+        }
+
         #timestamp {
             text-align: center;
             color: #666;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             margin-top: -20px;
             margin-bottom: 40px;
+        }
+
+        /* Custom scrollbar for the bracket */
+        .bracket-outer::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .bracket-outer::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .bracket-outer::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 5px;
+        }
+
+        .bracket-outer::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
         }
     </style>
 </head>
@@ -155,16 +247,18 @@
         <input type="text" id="userName" placeholder="Enter Your Name">
         <button class="btn-submit" onclick="submitBracket()">Submit My Bracket</button>
     </div>
-<div style="text-align: center; margin-bottom: 20px;">
-    <button id="toggle-official" class="btn-submit" style="width: auto; padding: 10px 20px;" onclick="showOfficialResults()">👁️ View Official Results</button>
-</div>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button id="toggle-official" class="btn-submit" style="width: auto; padding: 10px 20px;"
+            onclick="showOfficialResults()">👁️ View Official Results</button>
+    </div>
 
-<div id="official-results-display" style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-    <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners (So Far)</h3>
-    <div id="official-winners-list" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
+    <div id="official-results-display"
+        style="display: none; background: var(--card); border: 1px solid var(--primary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+        <h3 style="color: var(--primary); text-align: center; margin-top: 0;">🏆 Official Winners (So Far)</h3>
+        <div id="official-winners-list"
+            style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
         </div>
-</div>
-</div>
+    </div>
     <table>
         <thead>
             <tr>
@@ -186,7 +280,6 @@
         // --- CONFIGURATION ---
         const apiURL = 'https://script.google.com/macros/s/AKfycbxf87zSvixgOJBGO6Ccw3RFPLj7L8RvDevAj2RAOMcnFRq3h04pqMNl7MQARICzfIMWSg/exec';
         const officialJSONUrl = './official_bracket.json';
-
         const fullMovies = [
             { seed: 1, name: "The Shawshank Redemption" }, { seed: 16, name: "Airplane!" },
             { seed: 8, name: "The Social Network" }, { seed: 9, name: "Die Hard" },
@@ -222,11 +315,37 @@
             { seed: 2, name: "Se7en" }, { seed: 15, name: "Stranger Than Fiction" }
         ];
 
-        let bracketData = [[]];
+        // 2. Initialize Bracket Structure
+        let bracketData = [[], []]; // [0] is Round 1, [1] is Round 2
+
+        // 3. Fill Round 1 (64 Teams)
         for (let i = 0; i < fullMovies.length; i += 2) {
             bracketData[0].push([fullMovies[i], fullMovies[i + 1]]);
         }
 
+        // 4. Winners List
+        const r1WinnersNames = [
+            "The Shawshank Redemption", "Die Hard", "Fight Club", "Interstellar",
+            "A Few Good Men", "The Matrix", "The Shining", "Willy Wonka & the Chocolate Factory",
+            "The Godfather", "The Truman Show", "2001: A Space Odyssey", "12 Angry Men",
+            "Full Metal Jacket", "Back to the Future", "Jaws", "Star Wars: A New Hope",
+            "The Dark Knight", "Dead Poets Society", "Ferris Bueller's Day Off", "Raiders of the Lost Ark",
+            "The Breakfast Club", "Whiplash", "The Karate Kid", "Good Will Hunting",
+            "Pulp Fiction", "Avengers: Infinity War", "La La Land", "The Princess Bride",
+            "Inception", "The Usual Suspects", "Spider-Man: Into the Spider-Verse", "Se7en"
+        ];
+
+        // 5. Fill Round 2 (32 Winners) - Keeping Seeds Intact
+        r1WinnersNames.forEach((name, index) => {
+            // Find the full movie object from the list above so the seed stays with the name
+            const movieObj = fullMovies.find(m => m.name === name);
+
+            const matchIdx = Math.floor(index / 2);
+            const slotIdx = index % 2;
+
+            if (!bracketData[1][matchIdx]) bracketData[1][matchIdx] = [null, null];
+            bracketData[1][matchIdx][slotIdx] = movieObj;
+        });
         // --- LOGIC ---
         function renderBracket() {
             const container = document.getElementById("bracket-ui");
@@ -353,44 +472,44 @@
                 })
                 .catch(() => alert("Error submitting bracket."));
         }
-  async function showOfficialResults() {
-    const display = document.getElementById("official-results-display");
-    const list = document.getElementById("official-winners-list");
-    const btn = document.getElementById("toggle-official");
+        async function showOfficialResults() {
+            const display = document.getElementById("official-results-display");
+            const list = document.getElementById("official-winners-list");
+            const btn = document.getElementById("toggle-official");
 
-    // Toggle visibility
-    if (display.style.display === "block") {
-        display.style.display = "none";
-        btn.innerText = "👁️ View Official Results";
-        return;
-    }
-
-    try {
-        const response = await fetch(officialJSONUrl + '?t=' + Date.now());
-        const official = await response.json();
-        
-        list.innerHTML = "";
-        display.style.display = "block";
-        btn.innerText = "❌ Hide Official Results";
-
-        official.forEach((round, i) => {
-            if (round.length > 0) {
-                const roundDiv = document.createElement("div");
-                roundDiv.style.minWidth = "120px";
-                roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i+1}</strong><br>` + 
-                                     round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
-                list.appendChild(roundDiv);
+            // Toggle visibility
+            if (display.style.display === "block") {
+                display.style.display = "none";
+                btn.innerText = "👁️ View Official Results";
+                return;
             }
-        });
 
-        if (list.innerHTML === "") {
-            list.innerHTML = "<p>No winners announced yet! Check back after the first game.</p>";
+            try {
+                const response = await fetch(officialJSONUrl + '?t=' + Date.now());
+                const official = await response.json();
+
+                list.innerHTML = "";
+                display.style.display = "block";
+                btn.innerText = "❌ Hide Official Results";
+
+                official.forEach((round, i) => {
+                    if (round.length > 0) {
+                        const roundDiv = document.createElement("div");
+                        roundDiv.style.minWidth = "120px";
+                        roundDiv.innerHTML = `<strong style="color:var(--primary)">Round ${i + 1}</strong><br>` +
+                            round.map(name => `<span style="font-size: 0.9rem;">• ${name}</span>`).join("<br>");
+                        list.appendChild(roundDiv);
+                    }
+                });
+
+                if (list.innerHTML === "") {
+                    list.innerHTML = "<p>No winners announced yet! Check back after the first game.</p>";
+                }
+
+            } catch (err) {
+                alert("Could not load official results.");
+            }
         }
-
-    } catch (err) {
-        alert("Could not load official results.");
-    }
-}
         // --- INITIALIZE ---
         renderBracket();
         fetchLeaderboard();
