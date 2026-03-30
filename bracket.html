@@ -316,36 +316,63 @@
         ];
 
         // 2. Initialize Bracket Structure
-        let bracketData = [[], []]; // [0] is Round 1, [1] is Round 2
+        // 1. Initialize Bracket Structure (4 empty slots to start)
+let bracketData = [[], [], [], []]; 
 
-        // 3. Fill Round 1 (64 Teams)
-        for (let i = 0; i < fullMovies.length; i += 2) {
-            bracketData[0].push([fullMovies[i], fullMovies[i + 1]]);
-        }
+// 2. Load the original 64 teams into Round 1
+for (let i = 0; i < fullMovies.length; i += 2) {
+    bracketData[0].push([fullMovies[i], fullMovies[i + 1]]);
+}
 
-        // 4. Winners List
-        const r1WinnersNames = [
-            "The Shawshank Redemption", "Die Hard", "Fight Club", "Interstellar",
-            "A Few Good Men", "The Matrix", "The Shining", "Willy Wonka & the Chocolate Factory",
-            "The Godfather", "The Truman Show", "2001: A Space Odyssey", "12 Angry Men",
-            "Full Metal Jacket", "Back to the Future", "Jaws", "Star Wars: A New Hope",
-            "The Dark Knight", "Dead Poets Society", "Ferris Bueller's Day Off", "Raiders of the Lost Ark",
-            "The Breakfast Club", "Whiplash", "The Karate Kid", "Good Will Hunting",
-            "Pulp Fiction", "Avengers: Infinity War", "La La Land", "The Princess Bride",
-            "Inception", "The Usual Suspects", "Spider-Man: Into the Spider-Verse", "Se7en"
-        ];
+// 3. Round 1 Winners (The 32 from earlier)
+const r1Winners = [
+    "The Shawshank Redemption", "Die Hard", "Fight Club", "Interstellar",
+    "A Few Good Men", "The Matrix", "The Shining", "Willy Wonka & the Chocolate Factory",
+    "The Godfather", "The Truman Show", "2001: A Space Odyssey", "12 Angry Men",
+    "Full Metal Jacket", "Back to the Future", "Jaws", "Star Wars: A New Hope",
+    "The Dark Knight", "Dead Poets Society", "Ferris Bueller's Day Off", "Raiders of the Lost Ark",
+    "The Breakfast Club", "Whiplash", "The Karate Kid", "Good Will Hunting",
+    "Pulp Fiction", "Avengers: Infinity War", "La La Land", "The Princess Bride",
+    "Inception", "The Usual Suspects", "Spider-Man: Into the Spider-Verse", "Se7en"
+];
 
-        // 5. Fill Round 2 (32 Winners) - Keeping Seeds Intact
-        r1WinnersNames.forEach((name, index) => {
-            // Find the full movie object from the list above so the seed stays with the name
-            const movieObj = fullMovies.find(m => m.name === name);
+// 4. Round of 32 Winners (The 16 you just sent)
+const sweet16Winners = [
+    "The Shawshank Redemption", "Interstellar",
+    "The Matrix", "Willy Wonka & the Chocolate Factory",
+    "The Godfather", "2001: A Space Odyssey",
+    "Back to the Future", "Star Wars: A New Hope",
+    "The Dark Knight", "Ferris Bueller's Day Off",
+    "Whiplash", "The Karate Kid",
+    "Avengers: Infinity War", "La La Land",
+    "Inception", "Spider-Man: Into the Spider-Verse"
+];
 
-            const matchIdx = Math.floor(index / 2);
-            const slotIdx = index % 2;
+// Helper to find movie object by name
+const findMovie = (name) => fullMovies.find(m => m.name === name);
 
-            if (!bracketData[1][matchIdx]) bracketData[1][matchIdx] = [null, null];
-            bracketData[1][matchIdx][slotIdx] = movieObj;
-        });
+// 5. FILL THE ROUND OF 32 COLUMN (Index 1)
+r1Winners.forEach((name, index) => {
+    const movieObj = findMovie(name);
+    const matchIdx = Math.floor(index / 2);
+    const slotIdx = index % 2;
+    if (!bracketData[1][matchIdx]) bracketData[1][matchIdx] = [null, null];
+    bracketData[1][matchIdx][slotIdx] = movieObj;
+});
+
+// 6. FILL THE SWEET 16 COLUMN (Index 2)
+sweet16Winners.forEach((name, index) => {
+    const movieObj = findMovie(name);
+    const matchIdx = Math.floor(index / 2);
+    const slotIdx = index % 2;
+    if (!bracketData[2][matchIdx]) bracketData[2][matchIdx] = [null, null];
+    bracketData[2][matchIdx][slotIdx] = movieObj;
+});
+
+// 7. Prep Elite 8 and beyond (Indices 3, 4, 5)
+for (let i = 3; i < 6; i++) {
+    bracketData[i] = [];
+}
         // --- LOGIC ---
         function renderBracket() {
             const container = document.getElementById("bracket-ui");
